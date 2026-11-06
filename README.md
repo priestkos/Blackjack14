@@ -1,8 +1,12 @@
 # Blackjack14
 
+<img src="images/icon.png" width="96">
+
 Player-run blackjack in FFXIV, played with `/random 10` or `/dice <channel> 10`. The plugin rolls your cards, totals them, plays the dealer and settles the round. All you do is choose each move.
 
 `/bj` · Dalamud API 15 · .NET 10
+
+> **No support will be provided. This software is to be used as is, without warranty of any kind.**
 
 ## What it does
 
@@ -62,6 +66,10 @@ dotnet build -c Debug      # load bin/Debug/Blackjack14.dll as a dev plugin
 dotnet build -c Release    # zip in bin/Release/Blackjack14/latest.zip
 ```
 
+## Install
+
+Add `https://raw.githubusercontent.com/priestkos/PlogonYes/main/pluginmaster.json` under `/xlsettings` → Experimental → Custom Plugin Repositories, then install **Blackjack14** from `/xlplugins`.
+
 ## Install (dev plugin)
 
 1. `/xlsettings` → Experimental → Dev Plugin Locations → add `bin\Debug\Blackjack14.dll`.
@@ -95,4 +103,6 @@ Channels.cs             pure channel text: roll command, chat prefix, labels, se
 Configuration.cs        saved settings and their ranges
 BlackjackWindow.cs      Table / Settings / Help tabs
 Blackjack14.Tests/      xUnit tests over BlackjackGame.cs and Channels.cs
+images/                 icon.svg (source) and icon.png (manifest icon)
+.github/workflows/      build.yml (build + tests on every push), release.yml (tests, build, release on main)
 ```

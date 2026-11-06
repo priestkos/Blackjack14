@@ -1,0 +1,219 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'images/**'
+      - 'screenshots/**'
+      - '*.png'
+      - '*.mp4'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: blackjack14-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare automatic release (main push)
+        id: auto
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          function Get-FourPartVersion([string]$value) {
+            $parts = @($value.Split('.', [StringSplitOptions]::RemoveEmptyEntries))
+            while ($parts.Count -lt 4) { $parts += '0' }
+            if ($parts.Count -gt 4) { $parts = $parts[0..3] }
+            return ($parts -join '.')
+          }
+
+          function Compare-FourPartVersion([string]$left, [string]$right) {
+            $l = Get-FourPartVersion $left
+            $r = Get-FourPartVersion $right
+            for ($i = 0; $i -lt 4; $i++) {
+              $delta = [int]$l.Split('.')[$i] - [int]$r.Split('.')[$i]
+              if ($delta -ne 0) { return $delta }
+            }
+            return 0
+          }
+
+          $releasesJson = gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" 2>$null
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to list releases' }
+          $releases = @($releasesJson | ConvertFrom-Json)
+
+          $latestReleaseVersion = $null
+          foreach ($release in $releases) {
+            $tagName = [string]$release.tag_name
+            if ($tagName -notmatch '^v(.+)$') { continue }
+            $candidate = Get-FourPartVersion $matches[1]
+            if (-not $latestReleaseVersion -or (Compare-FourPartVersion $candidate $latestReleaseVersion) -gt 0) {
+              $latestReleaseVersion = $candidate
+            }
+          }
+
+          [xml]$proj = Get-Content -LiteralPath 'Blackjack14.csproj'
+          $csprojVersion = ($proj.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1)
+          if (-not $csprojVersion) { throw 'Version not found in Blackjack14.csproj' }
+          $csprojFour = Get-FourPartVersion ([string]$csprojVersion)
+
+          if (-not $latestReleaseVersion) {
+            $nextVersion = $csprojFour
+          } elseif ((Compare-FourPartVersion $csprojFour $latestReleaseVersion) -gt 0) {
+            $nextVersion = $csprojFour
+          } else {
+            $parts = @($latestReleaseVersion.Split('.'))
+            $parts[3] = [string]([int]$parts[3] + 1)
+            $nextVersion = $parts -join '.'
+          }
+
+          $tag = "v$nextVersion"
+          foreach ($release in $releases) {
+            if ([string]$release.target_commitish -eq $env:GITHUB_SHA) {
+              Write-Host "Commit $env:GITHUB_SHA already has release $($release.tag_name); skipping."
+              'skip=true' >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+          }
+
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists; skipping."
+            'skip=true' >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $global:LASTEXITCODE = 0
+
+          Write-Host "Next automatic release version: $nextVersion (tag $tag)"
+          "version=$nextVersion" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          'skip=false' >> $env:GITHUB_OUTPUT
+          exit 0
+
+      - name: Set up .NET
+        if: steps.auto.outputs.skip != 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the Dalamud development distribution
+        if: steps.auto.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          $dest = Join-Path $env:APPDATA 'XIVLauncher\addon\Hooks\dev'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://goatcorp.github.io/dalamud-distrib/latest.zip' -OutFile dalamud.zip
+          Expand-Archive -Path dalamud.zip -DestinationPath $dest -Force
+          exit 0
+
+      - name: Run the unit tests
+        if: steps.auto.outputs.skip != 'true'
+        run: dotnet test Blackjack14.Tests/Blackjack14.Tests.csproj -c Release
+
+      - name: Build Blackjack14
+        if: steps.auto.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          BUILD_VERSION: ${{ steps.auto.outputs.version }}
+        run: |
+          $buildArgs = @('build', 'Blackjack14.csproj', '-c', 'Release')
+          if (-not [string]::IsNullOrWhiteSpace($env:BUILD_VERSION)) {
+            $buildArgs += "-p:Version=$env:BUILD_VERSION"
+            $buildArgs += "-p:AssemblyVersion=$env:BUILD_VERSION"
+            $buildArgs += "-p:FileVersion=$env:BUILD_VERSION"
+          }
+          dotnet @buildArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Create GitHub Release
+        if: steps.auto.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          AUTO_RELEASE_VERSION: ${{ steps.auto.outputs.version }}
+          AUTO_RELEASE_TAG: ${{ steps.auto.outputs.tag }}
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $built = Get-ChildItem -Path 'bin/Release' -Recurse -Filter 'latest.zip' | Select-Object -First 1
+          if (-not $built) { throw 'latest.zip not found under bin/Release' }
+          Copy-Item -LiteralPath $built.FullName -Destination 'latest.zip' -Force
+
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path 'latest.zip'))
+          try {
+            $dllEntries = @($archive.Entries | Where-Object { $_.Name -like '*.dll' })
+            if ($dllEntries.Count -eq 0) { throw 'No plugin .dll found inside latest.zip' }
+
+            [xml]$proj = Get-Content -LiteralPath 'Blackjack14.csproj'
+            $assemblyBase = ($proj.Project.PropertyGroup | ForEach-Object { $_.Name } | Where-Object { $_ } | Select-Object -First 1)
+            if (-not $assemblyBase) { $assemblyBase = 'Blackjack14' }
+            $preferredDll = "$assemblyBase.dll"
+            $dllEntry = $dllEntries | Where-Object { $_.Name -eq $preferredDll } | Select-Object -First 1
+            if (-not $dllEntry) { $dllEntry = $dllEntries | Select-Object -First 1 }
+
+            $manifestName = [System.IO.Path]::ChangeExtension($dllEntry.Name, '.json')
+            $manifestEntry = $archive.Entries | Where-Object { $_.Name -eq $manifestName } | Select-Object -First 1
+            if (-not $manifestEntry) { throw "Manifest $manifestName not found inside latest.zip" }
+
+            $stream = $manifestEntry.Open()
+            try {
+              $manifest = [System.IO.StreamReader]::new($stream).ReadToEnd() | ConvertFrom-Json
+            } finally {
+              $stream.Dispose()
+            }
+          } finally {
+            $archive.Dispose()
+          }
+
+          $version = [string]$manifest.AssemblyVersion
+          if ([string]::IsNullOrWhiteSpace($version)) { throw 'AssemblyVersion missing from manifest' }
+
+          if ($env:EVENT_NAME -eq 'push' -and $env:REF_NAME -like 'v*') {
+            $tag = $env:REF_NAME
+            $tagVersion = $tag.Substring(1)
+            # AssemblyVersion is always four-part (v1.0.1 -> 1.0.1.0)
+            while ($tagVersion.Split('.').Count -lt 4) { $tagVersion += '.0' }
+            if ($tagVersion -ne $version) {
+              throw "Tag '$tag' (version '$tagVersion') does not match AssemblyVersion '$version'"
+            }
+            gh release create $tag latest.zip --title $tag --generate-notes
+          } elseif ($env:EVENT_NAME -eq 'push' -and $env:REF_NAME -eq 'main') {
+            if ([string]::IsNullOrWhiteSpace($env:AUTO_RELEASE_VERSION)) {
+              throw 'Automatic release version was not computed'
+            }
+            if ($version -ne $env:AUTO_RELEASE_VERSION) {
+              throw "Built AssemblyVersion '$version' does not match computed version '$($env:AUTO_RELEASE_VERSION)'"
+            }
+            $tag = $env:AUTO_RELEASE_TAG
+            if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v$($env:AUTO_RELEASE_VERSION)" }
+            gh release create $tag latest.zip --target $env:GITHUB_SHA --generate-notes
+          } else {
+            $tag = "v$version"
+            gh release view $tag 2>$null
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Release $tag already exists; skipping."
+              exit 0
+            }
+            $global:LASTEXITCODE = 0
+            gh release create $tag latest.zip --title $tag --generate-notes
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            exit 0
+          }

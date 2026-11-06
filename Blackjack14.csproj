@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
     <Version>0.1.0</Version>
-    <Description>Plays player-run blackjack with /random 10: deals, hits, doubles and splits for you, draws the dealer to 17 and settles the round. One /random every 2 seconds at most, only after you press a button.</Description>
+    <Description>Plays player-run blackjack with /random 10, or /dice 10 in a party, alliance, free company or linkshell channel. You press Deal, Hit, Stand, Double or Split; it rolls the cards, reads the results from chat, draws the dealer to 17 and settles the round in units. Nothing rolls without a button press, and never more than once every 2 seconds.</Description>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <LangVersion>latest</LangVersion>
@@ -15,8 +15,9 @@
     <Author>PriestKos</Author>
     <Authors>PriestKos</Authors>
     <Name>Blackjack14</Name>
-    <Punchline>Blackjack with /random 10, dealt and scored for you.</Punchline>
+    <Punchline>Player-run blackjack on /random or /dice: you pick the moves, it rolls, plays the dealer and scores.</Punchline>
     <RepoUrl>https://github.com/priestkos/Blackjack14</RepoUrl>
     <Tags>blackjack;minigame;random;utility</Tags>
+    <IconUrl>https://raw.githubusercontent.com/priestkos/Blackjack14/main/images/icon.png</IconUrl>
   </PropertyGroup>
 </Project>
