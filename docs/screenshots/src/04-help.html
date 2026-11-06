@@ -4,33 +4,100 @@
     <meta charset="UTF-8" />
     <title>Mock-up: Help tab</title>
     <link rel="stylesheet" href="common.css" />
+    <style>
+      .grid { border-collapse: collapse; margin: 2px 0 8px; }
+      .grid td { border: 1px solid #43434d; padding: 0 6px; text-align: center; white-space: pre; }
+      .grid td:first-child { text-align: left; }
+      .scroll { position: absolute; top: 30px; right: 2px; bottom: 2px; width: 12px; background: #1c1c22; border-radius: 6px; }
+      .scroll .grab { position: absolute; top: 0; left: 1px; right: 1px; height: 33%; background: #5a5a66; border-radius: 6px; }
+    </style>
   </head>
   <body>
     <div class="game-backdrop"></div>
     <div class="mockup-banner">Mock-up</div>
-    <div class="scene-label">Help tab — /bj help opens it: each rule with its reason (one scrolling column in game, two columns here to fit)</div>
-    <div class="imgui-window" style="top: 52px; left: 40px; width: 1200px; font-size: 12px;">
+    <div class="scene-label">Help tab — /bj help opens it: each rule with its reason, then the live odds for the current settings. It scrolls; this is the first part (default settings)</div>
+    <div class="imgui-window" style="top: 52px; left: 190px; width: 900px; height: 612px; overflow: hidden; font-size: 13px;">
       <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
-      <div class="imgui-body" style="line-height: 1.35;">
+      <div class="imgui-body" style="line-height: 1.35; padding-right: 22px;">
         <div class="tabs"><span class="tab">Table</span><span class="tab">Settings</span><span class="tab active">Help</span></div>
-        <div style="column-count: 2; column-gap: 28px;">
-          <div style="break-inside: avoid;"><div class="t">Cards</div><div class="wrap">One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. Why: /random 10 gives every value the same 1-in-10 chance and anyone nearby can see the roll, so nobody has to trust a hidden deck.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Ace counts 1 or 11</div><div class="wrap">It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is &#x27;soft&#x27; and can take a card without busting.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Tens are rarer here</div><div class="wrap">A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. Why it matters: 20s and naturals come up less often than at a casino table, and the dealer busts less.</div></div>
-          <div style="break-inside: avoid;"><div class="t">The dealer draws to 17</div><div class="wrap">Below 17 the dealer must hit; on 17 or more the dealer must stand. Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Dealer hits soft 17 (setting)</div><div class="wrap">Makes the dealer draw again on Ace+6. Why: it slightly improves the house&#x27;s odds, so it is off by default.</div></div>
-          <div style="break-inside: avoid;"><div class="t">You act first</div><div class="wrap">If you bust you lose, even if the dealer busts afterwards. Why: this is where the house&#x27;s edge comes from in blackjack.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Double</div><div class="wrap">First two cards only: the stake doubles, you take exactly one card, then stand. Why: you are betting more on a strong start (typically 10 or 11), so you give up the right to keep hitting.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Split</div><div class="wrap">Only on a pair, once per round. Each card starts its own hand. Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 each can still win. One split keeps the round short.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Double after split (setting)</div><div class="wrap">Lets each split hand double on its first two cards. On by default; turning it off favours the house.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Blackjack (natural)</div><div class="wrap">Ace + 10 on your first two cards. It pays 3:2 by default and ties a dealer natural. Why: it is the rarest strong hand (2% here), so it pays more. 6:5 or 1:1 favours the house. A 21 after a split is an ordinary 21: it is not your original two-card hand, which is the standard casino rule.</div></div>
-          <div style="break-inside: avoid;"><div class="t">21 stands automatically</div><div class="wrap">Why: no card can improve 21.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Channels</div><div class="wrap">Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Round result</div><div class="wrap">Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Safety</div><div class="wrap">Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. Only your own roll counts as a card, so nobody else can feed you cards. If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.</div></div>
-          <div style="break-inside: avoid;"><div class="t">Limits</div><div class="wrap">English client only. Bets and gil are not handled; stakes are units.</div></div>
+        <div id="content">
+          <div class="t">Cards</div>
+<div class="wrap">One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. Why: a 1-10 roll gives every value the same 10% chance and the roll is shown in chat (to everyone in say range for Say and Tell, to the group for Party and Alliance), so nobody has to trust a hidden deck.</div>
+          <div class="t">Ace counts 1 or 11</div>
+<div class="wrap">It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is &#39;soft&#39; and can take a card without busting.</div>
+          <div class="t">Tens are rarer here</div>
+<div class="wrap">A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. The average card is 5.5 here and 6.5 in a deck. Why: 20s and naturals come up less often, and the dealer busts less: 22.4% of dealer hands bust here, 28.2% with a deck.</div>
+          <div class="t">The dealer draws to 17</div>
+<div class="wrap">Below 17 the dealer must hit; on 17 or more the dealer must stand. Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.</div>
+          <div class="t">Dealer hits soft 17 (setting)</div>
+<div class="wrap">Makes the dealer draw again on Ace+6. Why: it raises the house edge from 1.67% to 3.27%, so it is off by default. It costs far more here than with a deck (0.49% to 0.71%): from soft 17 the next card makes 18-21 40% of the time here, 31% with a deck.</div>
+          <div class="t">You act first</div>
+<div class="wrap">If you bust you lose, even if the dealer busts afterwards. Why: this is where the house&#39;s edge comes from in blackjack.</div>
+          <div class="t">Double</div>
+<div class="wrap">First two cards only: the stake doubles, you take exactly one card, then stand. Why: it is meant for a strong start such as 10 or 11. With 1-10 rolls it never has the best expected value, under any setting: an 11 becomes 21 only 10% of the time (31% with a deck), so one card at double stake is worse than hitting freely.</div>
+          <div class="t">Split</div>
+<div class="wrap">Only on a pair, once per round. Each card starts its own hand. Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 can still win. One split keeps the round short. The chart below shows which pairs to split.</div>
+          <div class="t">Double after split (setting)</div>
+<div class="wrap">Lets each split hand double on its first two cards. With 1-10 rolls it changes nothing, because doubling never pays here. With a deck it is worth 0.12% to the player.</div>
+          <div class="t">Blackjack (natural)</div>
+<div class="wrap">Ace + 10 on your first two cards: 2.0% of hands here, 4.7% with a deck. It pays 3:2 by default and ties a dealer natural. Why: it is the best hand and rare, so it pays more. A 21 after a split is an ordinary 21: it is not your original two-card hand (the standard casino rule).</div>
+          <div class="t">21 stands automatically</div>
+<div class="wrap">Why: no card can improve 21.</div>
+          <div class="sep"></div>
+          <div class="t">The maths (current settings, best play)</div>
+          <div class="t">House edge</div>
+<div class="wrap">You lose 1.67% of every unit staked on average: 1.7 units per 100. The same rules with a deck: 0.49%. By natural payout: 3:2 1.67%, 6:5 2.26%, 2:1 0.69%, 1:1 2.65%.</div>
+          <div class="t">Luck against the edge</div>
+<div class="wrap">One round swings about 0.98 units either way (standard deviation). Over n rounds the edge costs n x 1.67% of a unit, while luck spreads about 0.98 x sqrt(n), so the edge only outweighs luck after about 3,450 rounds.</div>
+          <div class="t">Busting when you hit</div>
+<div class="wrap">A hard total t of 12 or more busts on the next card (t - 11) x 10% of the time: 12 10%, 14 30%, 16 50%, 20 90%. With a deck: 12 31%, 16 62%. That is why the chart hits more than a casino chart does.</div>
+          <div class="t">Dealer busts, by up-card</div>
+<table class="grid">
+<tr><td></td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>A</td></tr>
+<tr><td>Dice</td><td>23%</td><td>24%</td><td>25%</td><td>27%</td><td>28%</td><td>26%</td><td>23%</td><td>21%</td><td>19%</td><td>7%</td></tr>
+<tr><td>Deck</td><td>35%</td><td>37%</td><td>39%</td><td>42%</td><td>42%</td><td>26%</td><td>24%</td><td>23%</td><td>21%</td><td>12%</td></tr>
+</table>
+          <div class="t">Best play: H hit, S stand, D double, P split</div>
+<div class="wrap">Hard 11 or less: always hit. Hard 18 or more, and soft 19 or more: always stand.</div>
+<table class="grid">
+<tr><td>You \ Dealer</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>A</td></tr>
+<tr><td>Hard 12</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 13</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 14</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 15</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 16</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 17</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>H</td></tr>
+<tr><td>Soft 13</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 14</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 15</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 16</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 17</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 18</td><td>H</td><td>H</td><td>H</td><td>H</td><td>S</td><td>S</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 19</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Soft 20</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Pair As</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td></tr>
+<tr><td>Pair 2s</td><td>H</td><td>H</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 3s</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 4s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 5s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 6s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 7s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>P</td><td>P</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 8s</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td></tr>
+<tr><td>Pair 9s</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Pair 10s</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+</table>
+          <div class="sep"></div>
+          <div class="t">Channels</div>
+<div class="wrap">Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.</div>
+          <div class="t">Round result</div>
+<div class="wrap">Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.</div>
+          <div class="t">Safety</div>
+<div class="wrap">Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. Only your own roll counts as a card, so nobody else can feed you cards. If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.</div>
+          <div class="t">Limits</div>
+<div class="wrap">English client only. Bets and gil are not handled; stakes are units. The maths assumes best play and the 1-10 rolls are fair.</div>
         </div>
       </div>
+      <div class="scroll"><div class="grab"></div></div>
     </div>
   </body>
 </html>
