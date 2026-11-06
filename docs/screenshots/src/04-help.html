@@ -8,25 +8,28 @@
   <body>
     <div class="game-backdrop"></div>
     <div class="mockup-banner">Mock-up</div>
-    <div class="scene-label">Help tab — /bj help opens it: cards, a round, moves, channels, result, safety, limits</div>
-    <div class="imgui-window" style="top: 56px; left: 330px; width: 620px; font-size: 13px;">
+    <div class="scene-label">Help tab — /bj help opens it: each rule with its reason (one scrolling column in game, two columns here to fit)</div>
+    <div class="imgui-window" style="top: 52px; left: 40px; width: 1200px; font-size: 12px;">
       <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
-      <div class="imgui-body">
+      <div class="imgui-body" style="line-height: 1.35;">
         <div class="tabs"><span class="tab">Table</span><span class="tab">Settings</span><span class="tab active">Help</span></div>
-        <div class="t">Cards</div>
-        <div class="wrap">Each card is one roll of 1-10. 1 = Ace (1 or 11). 10 = face card. Closest to 21 without going over wins.</div>
-        <div class="t">A round</div>
-        <div class="wrap">Deal rolls 3 cards: 2 yours, 1 dealer&#x27;s. You choose moves; the plugin rolls the cards. After you stand, the dealer draws to 17. 21 stands automatically.</div>
-        <div class="t">Moves</div>
-        <div class="wrap">Hit: one card.  Stand: end the hand.  Double: first two cards only; one card at 2x stake, then stand.  Split: a pair becomes two hands, each dealt a second card.</div>
-        <div class="t">Channels</div>
-        <div class="wrap">Say radius uses /random 10. Any other choice uses /dice &lt;channel&gt; 10, seen only by that channel. Only your own roll in that channel counts as a card.</div>
-        <div class="t">Round result</div>
-        <div class="wrap">Off, Echo (only you see it), or posted to the roll channel as one line.</div>
-        <div class="t">Safety</div>
-        <div class="wrap">Nothing rolls until you press a button, never faster than the set spacing (2 s minimum). No result within the pause time stops rolling until you press Resume. Logging out abandons the round.</div>
-        <div class="t">Limits</div>
-        <div class="wrap">English client only. Bets and gil are not handled; stakes are units.</div>
+        <div style="column-count: 2; column-gap: 28px;">
+          <div style="break-inside: avoid;"><div class="t">Cards</div><div class="wrap">One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. Why: /random 10 gives every value the same 1-in-10 chance and anyone nearby can see the roll, so nobody has to trust a hidden deck.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Ace counts 1 or 11</div><div class="wrap">It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is &#x27;soft&#x27; and can take a card without busting.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Tens are rarer here</div><div class="wrap">A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. Why it matters: 20s and naturals come up less often than at a casino table, and the dealer busts less.</div></div>
+          <div style="break-inside: avoid;"><div class="t">The dealer draws to 17</div><div class="wrap">Below 17 the dealer must hit; on 17 or more the dealer must stand. Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Dealer hits soft 17 (setting)</div><div class="wrap">Makes the dealer draw again on Ace+6. Why: it slightly improves the house&#x27;s odds, so it is off by default.</div></div>
+          <div style="break-inside: avoid;"><div class="t">You act first</div><div class="wrap">If you bust you lose, even if the dealer busts afterwards. Why: this is where the house&#x27;s edge comes from in blackjack.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Double</div><div class="wrap">First two cards only: the stake doubles, you take exactly one card, then stand. Why: you are betting more on a strong start (typically 10 or 11), so you give up the right to keep hitting.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Split</div><div class="wrap">Only on a pair, once per round. Each card starts its own hand. Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 each can still win. One split keeps the round short.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Double after split (setting)</div><div class="wrap">Lets each split hand double on its first two cards. On by default; turning it off favours the house.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Blackjack (natural)</div><div class="wrap">Ace + 10 on your first two cards. It pays 3:2 by default and ties a dealer natural. Why: it is the rarest strong hand (2% here), so it pays more. 6:5 or 1:1 favours the house. A 21 after a split is an ordinary 21: it is not your original two-card hand, which is the standard casino rule.</div></div>
+          <div style="break-inside: avoid;"><div class="t">21 stands automatically</div><div class="wrap">Why: no card can improve 21.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Channels</div><div class="wrap">Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Round result</div><div class="wrap">Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Safety</div><div class="wrap">Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. Only your own roll counts as a card, so nobody else can feed you cards. If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.</div></div>
+          <div style="break-inside: avoid;"><div class="t">Limits</div><div class="wrap">English client only. Bets and gil are not handled; stakes are units.</div></div>
+        </div>
       </div>
     </div>
   </body>

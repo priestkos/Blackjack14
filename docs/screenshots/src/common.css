@@ -183,6 +183,10 @@ body {
   border-radius: 0 3px 3px 0;
 }
 
+.combo.input::after {
+  content: none;
+}
+
 .slider {
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -242,6 +246,10 @@ body {
 
 .chat-line.party {
   color: #66e5ff;
+}
+
+.chat-line.tell {
+  color: #f2a6d6;
 }
 
 .chat-line.other {

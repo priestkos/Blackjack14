@@ -8,19 +8,26 @@
   <body>
     <div class="game-backdrop"></div>
     <div class="mockup-banner">Mock-up</div>
-    <div class="scene-label">Settings tab — rolls via /dice party 10, result posted with /p, pacing sliders, table rules</div>
-    <div class="imgui-window" style="top: 70px; left: 380px; width: 520px;">
+    <div class="scene-label">Settings tab — rolls by Tell, result to Echo + Tell, tell target, pacing, rules</div>
+    <div class="imgui-window" style="top: 52px; left: 380px; width: 520px; font-size: 13px;">
       <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
-      <div class="imgui-body">
+      <div class="imgui-body" style="line-height: 1.4;">
         <div class="tabs"><span class="tab">Table</span><span class="tab active">Settings</span><span class="tab">Help</span></div>
-        <div class="t">Channels</div>
-        <div class="field-row"><div class="combo">Party</div><span>Rolls go to</span></div>
-        <div class="t dis">Sends: /dice party 10</div>
-        <div class="field-row"><div class="combo">Roll channel</div><span>Round result</span></div>
-        <div class="t dis">Posts with /p, visible to that channel.</div>
+        <div class="t">Rolls</div>
+        <div class="field-row"><div class="combo">Tell (/random + card by tell)</div><span>Rolls go to</span></div>
+        <div class="t dis">Sends: /random 10, then each card by /tell</div>
+        <div class="sep"></div>
+        <div class="t">Round result goes to</div>
+        <div class="field-row"><span class="checkbox-box">✓</span><span>Echo (only you)</span></div>
+        <div class="field-row"><span class="checkbox-box"></span><span>Say</span></div>
+        <div class="field-row"><span class="checkbox-box"></span><span>Party</span></div>
+        <div class="field-row"><span class="checkbox-box"></span><span>Alliance</span></div>
+        <div class="field-row"><span class="checkbox-box">✓</span><span>Tell</span></div>
+        <div class="sep"></div>
+        <div class="field-row"><div class="combo input">Rhea Starling@Balmung</div><span>Tell target</span></div>
         <div class="sep"></div>
         <div class="t">Pacing</div>
-        <div class="field-row"><div class="slider"><div class="grab" style="left: calc(0% * 0.94)"></div><span>2</span></div><span>Seconds between rolls</span></div>
+        <div class="field-row"><div class="slider"><div class="grab" style="left: calc(0% * 0.94)"></div><span>2</span></div><span>Seconds between sends</span></div>
         <div class="field-row"><div class="slider"><div class="grab" style="left: calc(20% * 0.94)"></div><span>10</span></div><span>Pause if no result (s)</span></div>
         <div class="sep"></div>
         <div class="t">Rules</div>

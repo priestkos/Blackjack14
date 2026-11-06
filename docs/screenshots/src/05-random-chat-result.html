@@ -2,20 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Mock-up: Say radius rolls and result</title>
+    <title>Mock-up: Tell rolls and result</title>
     <link rel="stylesheet" href="common.css" />
   </head>
   <body>
     <div class="game-backdrop"></div>
     <div class="mockup-banner">Mock-up</div>
-    <div class="scene-label">Say radius — Deal rolls A, 7, then 6; after Stand the dealer draws 10, 5; result echoed in one line</div>
+    <div class="scene-label">Tell — /random 10 in say radius, each card relayed by /tell; result echoed and told in one line</div>
     <div class="chat-panel">
       <div class="chat-line random">Random! You roll a 1 (out of 10).</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Card: A (you soft 11)</div>
       <div class="chat-line random">Random! You roll a 7 (out of 10).</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Card: 7 (you soft 18)</div>
       <div class="chat-line random">Random! You roll a 6 (out of 10).</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Dealer card: 6 (dealer 6)</div>
       <div class="chat-line random">Random! You roll a 10 (out of 10).</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Dealer card: 10 (dealer 16)</div>
       <div class="chat-line random">Random! You roll a 5 (out of 10).</div>
       <div class="chat-line echo">Blackjack: you 18 lose | dealer 21 | -1 unit(s)</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Dealer card: 5 (dealer 21)</div>
+      <div class="chat-line tell">&gt;&gt; Rhea Starling@Balmung: Blackjack: you 18 lose | dealer 21 | -1 unit(s)</div>
     </div>
     <div class="chat-hint">Illustrative chat lines — not a real client log</div>
     <div class="imgui-window" style="top: 70px; right: 48px; width: 460px;">
@@ -32,5 +38,6 @@
         <div class="t">Round: -1 unit(s)</div>
       </div>
     </div>
+    <div class="callout" style="top: 360px; right: 48px; max-width: 460px">The game cannot roll into a tell: the roll stays public in say range and the tell only relays the card. The echo prints at once; the last card and the result tell wait for the send spacing.</div>
   </body>
 </html>
