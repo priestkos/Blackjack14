@@ -74,6 +74,7 @@ public sealed partial class BlackjackGame
         ActiveIndex = 0;
         Results.Clear();
         outcomes.Clear();
+        LastDraw = "";
         Net = 0;
         cardOwed = false;
         Phase = Phase.Dealing;
@@ -114,8 +115,8 @@ public sealed partial class BlackjackGame
         switch (Phase)
         {
             case Phase.Dealing:
-                if (PlayerHands[0].Cards.Count < 2) PlayerHands[0].Cards.Add(roll);
-                else Dealer.Cards.Add(roll);
+                if (PlayerHands[0].Cards.Count < 2) Draw(PlayerHands[0], roll);
+                else Draw(Dealer, roll);
                 if (Dealer.Cards.Count == 1)
                 {
                     Phase = Phase.Player;
@@ -124,18 +125,32 @@ public sealed partial class BlackjackGame
                 break;
 
             case Phase.Player:
-                Active.Cards.Add(roll);
+                Draw(Active, roll);
                 cardOwed = false;
                 if (Active.Doubled || Active.Total >= 21) NextHand();
                 break;
 
             case Phase.Dealer:
-                Dealer.Cards.Add(roll);
+                Draw(Dealer, roll);
                 if (DealerStands) Settle();
                 break;
         }
 
         return true;
+    }
+
+    /// <summary>The last card dealt, as one line for the player, e.g. "Card: 7 (you 15)" or "Dealer card: A (dealer soft 17)".</summary>
+    public string LastDraw { get; private set; } = "";
+
+    private void Draw(Hand hand, int roll)
+    {
+        hand.Cards.Add(roll);
+        var total = $"{(hand.IsSoft ? "soft " : "")}{hand.Total}{(hand.IsBust ? " bust" : "")}";
+        LastDraw = hand == Dealer
+            ? $"Dealer card: {CardName(roll)} (dealer {total})"
+            : PlayerHands.Count > 1
+                ? $"Card: {CardName(roll)} (hand {PlayerHands.IndexOf(hand) + 1}: {total})"
+                : $"Card: {CardName(roll)} (you {total})";
     }
 
     private void NextHand()

@@ -239,30 +239,97 @@ public class BlackjackGameTests
     }
 
     [Theory]
-    [InlineData(RollChannel.Say, "/random 10", "/s")]
-    [InlineData(RollChannel.Party, "/dice party 10", "/p")]
-    [InlineData(RollChannel.Alliance, "/dice alliance 10", "/a")]
-    [InlineData(RollChannel.FreeCompany, "/dice freecompany 10", "/fc")]
-    [InlineData(RollChannel.PvPTeam, "/dice pvpteam 10", "/pt")]
-    [InlineData(RollChannel.Linkshell1, "/dice linkshell1 10", "/l1")]
-    [InlineData(RollChannel.Linkshell8, "/dice linkshell8 10", "/l8")]
-    [InlineData(RollChannel.CrossLinkshell1, "/dice cwlinkshell1 10", "/cwl1")]
-    [InlineData(RollChannel.CrossLinkshell8, "/dice cwlinkshell8 10", "/cwl8")]
-    public void Channel_commands(RollChannel c, string roll, string prefix)
+    [InlineData(RollChannel.Say, "/random 10", false)]
+    [InlineData(RollChannel.Party, "/dice party 10", true)]
+    [InlineData(RollChannel.Alliance, "/dice alliance 10", true)]
+    [InlineData(RollChannel.Tell, "/random 10", false)]
+    public void Roll_commands(RollChannel c, string roll, bool dice)
     {
         Assert.Equal(roll, Channels.RollCommand(c));
-        Assert.Equal(prefix, Channels.ChatPrefix(c));
+        Assert.Equal(dice, Channels.UsesDice(c));
     }
 
     [Fact]
-    public void Every_channel_has_a_command_prefix_and_label()
+    public void Only_say_tell_party_alliance_are_roll_channels_and_their_numbers_are_stable()
     {
-        foreach (var c in Enum.GetValues<RollChannel>())
+        Assert.Equal(new[] { 0, 1, 2, 3 }, Enum.GetValues<RollChannel>().Select(c => (int)c));
+        Assert.Equal(new[] { "Say", "Party", "Alliance", "Tell" }, Enum.GetNames<RollChannel>());
+    }
+
+    [Theory]
+    [InlineData(ResultTargets.Say, "/s")]
+    [InlineData(ResultTargets.Party, "/p")]
+    [InlineData(ResultTargets.Alliance, "/a")]
+    [InlineData(ResultTargets.Tell, "/tell Ann Lee@Gilgamesh")]
+    [InlineData(ResultTargets.Echo, null)]
+    public void Result_prefixes(ResultTargets t, string? prefix) =>
+        Assert.Equal(prefix, Channels.ChatPrefix(t, " Ann Lee@Gilgamesh "));
+
+    [Fact]
+    public void Tell_prefix_is_withheld_without_a_valid_target() =>
+        Assert.Null(Channels.ChatPrefix(ResultTargets.Tell, "Ann Lee"));
+
+    [Theory]
+    [InlineData("Ann Lee@Gilgamesh", true)]
+    [InlineData("J'ann O'Lee-Ra@Cactuar", true)]
+    [InlineData("Ann Lee", false)]
+    [InlineData("Ann@Gilgamesh", false)]
+    [InlineData("Ann Lee Smith@Gilgamesh", false)]
+    [InlineData("Ann Lee@Gilgamesh /random 999", false)]
+    [InlineData("Ann Lee@Gilgamesh\n/shout hi", false)]
+    [InlineData("A Lee@Gilgamesh", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void Tell_target_must_be_forename_surname_at_world(string? target, bool ok) =>
+        Assert.Equal(ok, Channels.IsValidTellTarget(target));
+
+    [Fact]
+    public void Every_result_choice_has_a_label_and_is_a_single_flag()
+    {
+        foreach (var t in Channels.ResultChoices)
         {
-            Assert.StartsWith("/", Channels.RollCommand(c));
-            Assert.StartsWith("/", Channels.ChatPrefix(c));
-            Assert.False(string.IsNullOrWhiteSpace(Channels.Label(c)));
+            Assert.False(string.IsNullOrWhiteSpace(Channels.Label(t)));
+            Assert.True(((int)t & ((int)t - 1)) == 0);
         }
+    }
+
+    [Theory]
+    [InlineData(0, 1, RollChannel.Say, ResultTargets.Echo)]
+    [InlineData(1, 2, RollChannel.Party, ResultTargets.Party)]
+    [InlineData(2, 2, RollChannel.Alliance, ResultTargets.Alliance)]
+    [InlineData(0, 2, RollChannel.Say, ResultTargets.Say)]
+    [InlineData(0, 0, RollChannel.Say, ResultTargets.None)]
+    [InlineData(3, 1, RollChannel.Say, ResultTargets.Echo)]   // v1 FreeCompany must not become Tell
+    [InlineData(3, 2, RollChannel.Say, ResultTargets.Echo)]   // results went to FC, which no longer exists
+    [InlineData(20, 2, RollChannel.Say, ResultTargets.Echo)]  // v1 CrossLinkshell8
+    [InlineData(1, null, RollChannel.Party, ResultTargets.Echo)]
+    public void Config_v1_migrates(int oldRoll, int? oldAnnounce, RollChannel roll, ResultTargets results) =>
+        Assert.Equal((roll, results), Channels.MigrateV1(oldRoll, oldAnnounce));
+
+    [Fact]
+    public void Each_card_is_described_for_the_tell_relay()
+    {
+        var g = new BlackjackGame();
+        g.Deal();
+        g.AddCard(1);
+        Assert.Equal("Card: A (you soft 11)", g.LastDraw);
+        g.AddCard(6);
+        Assert.Equal("Card: 6 (you soft 17)", g.LastDraw);
+        g.AddCard(10);
+        Assert.Equal("Dealer card: 10 (dealer 10)", g.LastDraw);
+        g.Hit();
+        g.AddCard(10);
+        Assert.Equal("Card: 10 (you 17)", g.LastDraw);
+        Assert.True(Channels.IsSendable(g.LastDraw));
+    }
+
+    [Fact]
+    public void Split_cards_name_their_hand()
+    {
+        var g = Dealt(8, 8, 10);
+        g.Split();
+        g.AddCard(10);
+        Assert.Equal("Card: 10 (hand 1: 18)", g.LastDraw);
     }
 
     [Theory]

@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
     <Version>0.1.0</Version>
-    <Description>Plays player-run blackjack with /random 10, or /dice 10 in a party, alliance, free company or linkshell channel. You press Deal, Hit, Stand, Double or Split; it rolls the cards, reads the results from chat, draws the dealer to 17 and settles the round in units. Nothing rolls without a button press, and never more than once every 2 seconds.</Description>
+    <Description>Plays player-run blackjack with /random 10 in say range or by tell, or /dice 10 in party or alliance. You press Deal, Hit, Stand, Double or Split; it rolls the cards, reads the results from chat, draws the dealer to 17 and settles the round in units, posting the result to any mix of Echo, Say, Party, Alliance and Tell. Nothing rolls without a button press, and never more than once every 2 seconds.</Description>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <LangVersion>latest</LangVersion>

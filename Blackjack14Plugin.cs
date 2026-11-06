@@ -28,6 +28,9 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
     public bool Paused { get; private set; }
     public bool RollInFlight => sentAt != 0;
 
+    /// <summary>Tell needs a valid Forename Surname@World before any card is rolled for it.</summary>
+    public bool CanRoll => Config.RollChannel != RollChannel.Tell || Channels.IsValidTellTarget(Config.TellTarget);
+
     private long sentAt;
     private long lastSentAt;
     private bool announced = true;
@@ -148,7 +151,7 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
             return;
         }
 
-        if (Paused || !Game.NeedsCard) return;
+        if (Paused || !Game.NeedsCard || !CanRoll) return;
         if (!Send(Channels.RollCommand(Config.RollChannel))) return;
         sentAt = lastSentAt = now;
     }
@@ -156,15 +159,20 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
     private void Announce()
     {
         var line = Game.Summary;
-        switch (Config.Announce)
+        if (Config.ResultTo.HasFlag(ResultTargets.Echo))
+            chatGui.Print(new XivChatEntry { Type = XivChatType.Echo, Message = line });
+
+        foreach (var target in Channels.ResultChoices)
         {
-            case AnnounceTarget.Echo:
-                chatGui.Print(new XivChatEntry { Type = XivChatType.Echo, Message = line });
-                break;
-            case AnnounceTarget.RollChannel when Channels.IsSendable(line):
-                outbox.Enqueue($"{Channels.ChatPrefix(Config.RollChannel)} {line}");
-                break;
+            if (!Config.ResultTo.HasFlag(target)) continue;
+            Post(Channels.ChatPrefix(target, Config.TellTarget), line);
         }
+    }
+
+    // Queues one plugin-composed line behind its chat prefix; anything unsendable is dropped, never altered.
+    private void Post(string? prefix, string line)
+    {
+        if (prefix is not null && Channels.IsSendable(line)) outbox.Enqueue($"{prefix} {line}");
     }
 
     private void OnChatMessage(IHandleableChatMessage message)
@@ -172,7 +180,7 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
         // Only a result we asked for is a card: a stray roll while idle never moves the game.
         if (sentAt == 0) return;
 
-        var dice = Config.RollChannel != RollChannel.Say;
+        var dice = Channels.UsesDice(Config.RollChannel);
         if (dice)
         {
             if (!DiceKinds(Config.RollChannel).Contains(message.LogKind)) return;
@@ -185,7 +193,10 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
         }
 
         if (BlackjackGame.TryParseRoll(message.Message.TextValue, dice) is not { } roll) return;
-        if (Game.AddCard(roll)) sentAt = 0;
+        if (!Game.AddCard(roll)) return;
+        sentAt = 0;
+        // The game cannot roll into a tell: the roll is public in say range and the card is relayed to the player.
+        if (Config.RollChannel == RollChannel.Tell) Post(Channels.ChatPrefix(ResultTargets.Tell, Config.TellTarget), Game.LastDraw);
     }
 
     // The chat types a /dice result lands in for each mode; Party includes cross-world party.
@@ -193,30 +204,12 @@ public sealed class Blackjack14Plugin : IDalamudPlugin
     {
         RollChannel.Party => [XivChatType.Party, XivChatType.CrossParty],
         RollChannel.Alliance => [XivChatType.Alliance],
-        RollChannel.FreeCompany => [XivChatType.FreeCompany],
-        RollChannel.PvPTeam => [XivChatType.PvPTeam],
-        RollChannel.Linkshell1 => [XivChatType.Ls1],
-        RollChannel.Linkshell2 => [XivChatType.Ls2],
-        RollChannel.Linkshell3 => [XivChatType.Ls3],
-        RollChannel.Linkshell4 => [XivChatType.Ls4],
-        RollChannel.Linkshell5 => [XivChatType.Ls5],
-        RollChannel.Linkshell6 => [XivChatType.Ls6],
-        RollChannel.Linkshell7 => [XivChatType.Ls7],
-        RollChannel.Linkshell8 => [XivChatType.Ls8],
-        RollChannel.CrossLinkshell1 => [XivChatType.CrossLinkShell1],
-        RollChannel.CrossLinkshell2 => [XivChatType.CrossLinkShell2],
-        RollChannel.CrossLinkshell3 => [XivChatType.CrossLinkShell3],
-        RollChannel.CrossLinkshell4 => [XivChatType.CrossLinkShell4],
-        RollChannel.CrossLinkshell5 => [XivChatType.CrossLinkShell5],
-        RollChannel.CrossLinkshell6 => [XivChatType.CrossLinkShell6],
-        RollChannel.CrossLinkshell7 => [XivChatType.CrossLinkShell7],
-        RollChannel.CrossLinkshell8 => [XivChatType.CrossLinkShell8],
         _ => [],
     };
 
     private void OnLogout(int type, int code) => Reset();
 
-    // Only plugin-composed text reaches here: a roll command or a summary checked by Channels.IsSendable.
+    // Only plugin-composed text reaches here: a roll command, or a line checked by Channels.IsSendable behind a fixed prefix.
     private static unsafe bool Send(string text)
     {
         var ui = UIModule.Instance();

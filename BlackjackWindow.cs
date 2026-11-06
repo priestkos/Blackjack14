@@ -8,7 +8,6 @@ namespace Blackjack14;
 public sealed class BlackjackWindow : Window
 {
     private static readonly (decimal Value, string Label)[] Payouts = [(1.5m, "3:2"), (1.2m, "6:5"), (2m, "2:1"), (1m, "1:1")];
-    private static readonly string[] AnnounceLabels = ["Off", "Echo (only you)", "Roll channel"];
 
     private readonly Blackjack14Plugin plugin;
     private string? selectTab;
@@ -69,7 +68,7 @@ public sealed class BlackjackWindow : Window
 
         if (plugin.Paused && ImGui.Button("Resume rolling")) plugin.Resume();
 
-        using (ImRaii.Disabled(game.Phase is not (Phase.Idle or Phase.Done))) { if (ImGui.Button("Deal")) plugin.Deal(); }
+        using (ImRaii.Disabled(game.Phase is not (Phase.Idle or Phase.Done) || !plugin.CanRoll)) { if (ImGui.Button("Deal")) plugin.Deal(); }
         ImGui.SameLine();
         using (ImRaii.Disabled(!game.CanHit)) { if (ImGui.Button("Hit")) game.Hit(); }
         ImGui.SameLine();
@@ -93,7 +92,7 @@ public sealed class BlackjackWindow : Window
         using var locked = ImRaii.Disabled(inRound);
         var changed = false;
 
-        ImGui.TextUnformatted("Channels");
+        ImGui.TextUnformatted("Rolls");
         using (var combo = ImRaii.Combo("Rolls go to", Channels.Label(config.RollChannel)))
         {
             if (combo)
@@ -107,22 +106,37 @@ public sealed class BlackjackWindow : Window
             }
         }
 
-        ImGui.TextDisabled($"Sends: {Channels.RollCommand(config.RollChannel)}");
+        ImGui.TextDisabled($"Sends: {Channels.RollCommand(config.RollChannel)}"
+            + (config.RollChannel == RollChannel.Tell ? ", then each card by /tell" : ""));
 
-        var announce = (int)config.Announce;
-        if (ImGui.Combo("Round result", ref announce, AnnounceLabels, AnnounceLabels.Length))
+        ImGui.Separator();
+        ImGui.TextUnformatted("Round result goes to");
+        foreach (var target in Channels.ResultChoices)
         {
-            config.Announce = (AnnounceTarget)announce;
+            var on = config.ResultTo.HasFlag(target);
+            if (!ImGui.Checkbox(Channels.Label(target), ref on)) continue;
+            config.ResultTo = on ? config.ResultTo | target : config.ResultTo & ~target;
             changed = true;
         }
 
-        if (config.Announce == AnnounceTarget.RollChannel)
-            ImGui.TextDisabled($"Posts with {Channels.ChatPrefix(config.RollChannel)}, visible to that channel.");
+        if (config.RollChannel == RollChannel.Tell || config.ResultTo.HasFlag(ResultTargets.Tell))
+        {
+            ImGui.Separator();
+            var tell = config.TellTarget;
+            if (ImGui.InputTextWithHint("Tell target", "Forename Surname@World", ref tell, 48))
+            {
+                config.TellTarget = tell.Trim();
+                changed = true;
+            }
+
+            if (!Channels.IsValidTellTarget(config.TellTarget))
+                ImGui.TextDisabled("Needs Forename Surname@World. Nothing is sent by tell until it does.");
+        }
 
         ImGui.Separator();
         ImGui.TextUnformatted("Pacing");
         var spacing = config.RollSpacingSeconds;
-        if (ImGui.SliderInt("Seconds between rolls", ref spacing, Configuration.MinRollSpacing, 10))
+        if (ImGui.SliderInt("Seconds between sends", ref spacing, Configuration.MinRollSpacing, 10))
         {
             config.RollSpacingSeconds = spacing;
             changed = true;
@@ -170,16 +184,30 @@ public sealed class BlackjackWindow : Window
 
     private static void DrawHelp()
     {
-        Section("Cards", "Each card is one roll of 1-10. 1 = Ace (1 or 11). 10 = face card. Closest to 21 without going over wins.");
-        Section("A round", "Deal rolls 3 cards: 2 yours, 1 dealer's. You choose moves; the plugin rolls the cards. "
-            + "After you stand, the dealer draws to 17. 21 stands automatically.");
-        Section("Moves", "Hit: one card.  Stand: end the hand.  Double: first two cards only; one card at 2x stake, then stand.  "
-            + "Split: a pair becomes two hands, each dealt a second card.");
-        Section("Channels", "Say radius uses /random 10. Any other choice uses /dice <channel> 10, seen only by that channel. "
-            + "Only your own roll in that channel counts as a card.");
-        Section("Round result", "Off, Echo (only you see it), or posted to the roll channel as one line.");
-        Section("Safety", "Nothing rolls until you press a button, never faster than the set spacing (2 s minimum). "
-            + "No result within the pause time stops rolling until you press Resume. Logging out abandons the round.");
+        Section("Cards", "One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. "
+            + "Why: /random 10 gives every value the same 1-in-10 chance and anyone nearby can see the roll, so nobody has to trust a hidden deck.");
+        Section("Ace counts 1 or 11", "It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is 'soft' and can take a card without busting.");
+        Section("Tens are rarer here", "A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. "
+            + "Why it matters: 20s and naturals come up less often than at a casino table, and the dealer busts less.");
+        Section("The dealer draws to 17", "Below 17 the dealer must hit; on 17 or more the dealer must stand. "
+            + "Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.");
+        Section("Dealer hits soft 17 (setting)", "Makes the dealer draw again on Ace+6. Why: it slightly improves the house's odds, so it is off by default.");
+        Section("You act first", "If you bust you lose, even if the dealer busts afterwards. Why: this is where the house's edge comes from in blackjack.");
+        Section("Double", "First two cards only: the stake doubles, you take exactly one card, then stand. "
+            + "Why: you are betting more on a strong start (typically 10 or 11), so you give up the right to keep hitting.");
+        Section("Split", "Only on a pair, once per round. Each card starts its own hand. "
+            + "Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 each can still win. One split keeps the round short.");
+        Section("Double after split (setting)", "Lets each split hand double on its first two cards. On by default; turning it off favours the house.");
+        Section("Blackjack (natural)", "Ace + 10 on your first two cards. It pays 3:2 by default and ties a dealer natural. "
+            + "Why: it is the rarest strong hand (2% here), so it pays more. 6:5 or 1:1 favours the house. "
+            + "A 21 after a split is an ordinary 21: it is not your original two-card hand, which is the standard casino rule.");
+        Section("21 stands automatically", "Why: no card can improve 21.");
+        Section("Channels", "Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. "
+            + "Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.");
+        Section("Round result", "Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.");
+        Section("Safety", "Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. "
+            + "Only your own roll counts as a card, so nobody else can feed you cards. "
+            + "If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.");
         Section("Limits", "English client only. Bets and gil are not handled; stakes are units.");
     }
 
@@ -200,6 +228,7 @@ public sealed class BlackjackWindow : Window
 
     private string Status(BlackjackGame game) => game.Phase switch
     {
+        _ when !plugin.CanRoll => "Tell needs a target: Settings > Tell target.",
         _ when plugin.Paused => $"Paused: no roll result seen within {plugin.Config.RollTimeoutSeconds} s.",
         _ when plugin.RollInFlight => "Rolling...",
         Phase.Idle => "Ready.",
