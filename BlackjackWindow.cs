@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
@@ -182,33 +183,129 @@ public sealed class BlackjackWindow : Window
         if (changed) plugin.SaveConfig();
     }
 
-    private static void DrawHelp()
+    private static string Pct(double x, int decimals = 1) =>
+        (x * 100).ToString(decimals switch { 0 => "0", 1 => "0.0", _ => "0.00" }, CultureInfo.InvariantCulture) + "%";
+
+    private void DrawHelp()
     {
+        var rules = plugin.Config.Rules;
+        var dice = Odds.For(rules);
+        var deck = Odds.For(rules, deck: true);
+        Rules With(bool? h17 = null, bool? das = null, decimal? pays = null) => new()
+        {
+            DealerHitsSoft17 = h17 ?? rules.DealerHitsSoft17,
+            DoubleAfterSplit = das ?? rules.DoubleAfterSplit,
+            NaturalPays = pays ?? rules.NaturalPays,
+        };
+
         Section("Cards", "One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. "
-            + "Why: /random 10 gives every value the same 1-in-10 chance and anyone nearby can see the roll, so nobody has to trust a hidden deck.");
+            + "Why: a 1-10 roll gives every value the same 10% chance and the roll is shown in chat (to everyone in say range for Say and Tell, "
+            + "to the group for Party and Alliance), so nobody has to trust a hidden deck.");
         Section("Ace counts 1 or 11", "It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is 'soft' and can take a card without busting.");
         Section("Tens are rarer here", "A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. "
-            + "Why it matters: 20s and naturals come up less often than at a casino table, and the dealer busts less.");
+            + $"The average card is {dice.CardAverage.ToString("0.0", CultureInfo.InvariantCulture)} here and {deck.CardAverage.ToString("0.0", CultureInfo.InvariantCulture)} in a deck. "
+            + $"Why: 20s and naturals come up less often, and the dealer busts less: {Pct(dice.DealerBustOverall)} of dealer hands bust here, {Pct(deck.DealerBustOverall)} with a deck.");
         Section("The dealer draws to 17", "Below 17 the dealer must hit; on 17 or more the dealer must stand. "
             + "Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.");
-        Section("Dealer hits soft 17 (setting)", "Makes the dealer draw again on Ace+6. Why: it slightly improves the house's odds, so it is off by default.");
+        Section("Dealer hits soft 17 (setting)", "Makes the dealer draw again on Ace+6. "
+            + $"Why: it raises the house edge from {Pct(Odds.For(With(h17: false)).HouseEdge, 2)} to {Pct(Odds.For(With(h17: true)).HouseEdge, 2)}, so it is off by default. "
+            + $"It costs far more here than with a deck ({Pct(Odds.For(With(h17: false), true).HouseEdge, 2)} to {Pct(Odds.For(With(h17: true), true).HouseEdge, 2)}): "
+            + "from soft 17 the next card makes 18-21 40% of the time here, 31% with a deck.");
         Section("You act first", "If you bust you lose, even if the dealer busts afterwards. Why: this is where the house's edge comes from in blackjack.");
         Section("Double", "First two cards only: the stake doubles, you take exactly one card, then stand. "
-            + "Why: you are betting more on a strong start (typically 10 or 11), so you give up the right to keep hitting.");
+            + "Why: it is meant for a strong start such as 10 or 11. With 1-10 rolls it never has the best expected value, under any setting: "
+            + "an 11 becomes 21 only 10% of the time (31% with a deck), so one card at double stake is worse than hitting freely.");
         Section("Split", "Only on a pair, once per round. Each card starts its own hand. "
-            + "Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 each can still win. One split keeps the round short.");
-        Section("Double after split (setting)", "Lets each split hand double on its first two cards. On by default; turning it off favours the house.");
-        Section("Blackjack (natural)", "Ace + 10 on your first two cards. It pays 3:2 by default and ties a dealer natural. "
-            + "Why: it is the rarest strong hand (2% here), so it pays more. 6:5 or 1:1 favours the house. "
-            + "A 21 after a split is an ordinary 21: it is not your original two-card hand, which is the standard casino rule.");
+            + "Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 can still win. One split keeps the round short. The chart below shows which pairs to split.");
+        Section("Double after split (setting)", "Lets each split hand double on its first two cards. "
+            + "With 1-10 rolls it changes nothing, because doubling never pays here. "
+            + $"With a deck it is worth {Pct(Odds.For(With(das: false), true).HouseEdge - Odds.For(With(das: true), true).HouseEdge, 2)} to the player.");
+        Section("Blackjack (natural)", $"Ace + 10 on your first two cards: {Pct(dice.Natural)} of hands here, {Pct(deck.Natural)} with a deck. "
+            + "It pays 3:2 by default and ties a dealer natural. Why: it is the best hand and rare, so it pays more. "
+            + "A 21 after a split is an ordinary 21: it is not your original two-card hand (the standard casino rule).");
         Section("21 stands automatically", "Why: no card can improve 21.");
+
+        ImGui.Separator();
+        ImGui.TextUnformatted("The maths (current settings, best play)");
+        ImGui.Spacing();
+        Section("House edge", $"You lose {Pct(dice.HouseEdge, 2)} of every unit staked on average: {(dice.HouseEdge * 100).ToString("0.0", CultureInfo.InvariantCulture)} units per 100. "
+            + $"The same rules with a deck: {Pct(deck.HouseEdge, 2)}. "
+            + $"By natural payout: 3:2 {Pct(Odds.For(With(pays: 1.5m)).HouseEdge, 2)}, 6:5 {Pct(Odds.For(With(pays: 1.2m)).HouseEdge, 2)}, "
+            + $"2:1 {Pct(Odds.For(With(pays: 2m)).HouseEdge, 2)}, 1:1 {Pct(Odds.For(With(pays: 1m)).HouseEdge, 2)}.");
+        Section("Luck against the edge", $"One round swings about {Odds.RoundSpread.ToString("0.00", CultureInfo.InvariantCulture)} units either way (standard deviation). "
+            + $"Over n rounds the edge costs n x {Pct(dice.HouseEdge, 2)} of a unit, while luck spreads about {Odds.RoundSpread.ToString("0.00", CultureInfo.InvariantCulture)} x sqrt(n), "
+            + $"so the edge only outweighs luck after about {dice.RoundsUntilEdgeShows.ToString("N0", CultureInfo.InvariantCulture)} rounds.");
+        Section("Busting when you hit", "A hard total t of 12 or more busts on the next card (t - 11) x 10% of the time: "
+            + $"12 {Pct(dice.BustOnHit(12), 0)}, 14 {Pct(dice.BustOnHit(14), 0)}, 16 {Pct(dice.BustOnHit(16), 0)}, 20 {Pct(dice.BustOnHit(20), 0)}. "
+            + $"With a deck: 12 {Pct(deck.BustOnHit(12), 0)}, 16 {Pct(deck.BustOnHit(16), 0)}. That is why the chart hits more than a casino chart does.");
+
+        ImGui.TextUnformatted("Dealer busts, by up-card");
+        using (var table = ImRaii.Table("##bust", 11, ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit))
+        {
+            if (table)
+            {
+                Header("");
+                Row("Dice", u => Pct(dice.DealerBust(u), 0));
+                Row("Deck", u => Pct(deck.DealerBust(u), 0));
+            }
+        }
+
+        ImGui.Spacing();
+        ImGui.TextUnformatted("Best play: H hit, S stand, D double, P split");
+        ImGui.TextWrapped("Hard 11 or less: always hit. Hard 18 or more, and soft 19 or more: always stand.");
+        using (var table = ImRaii.Table("##chart", 11, ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit))
+        {
+            if (table)
+            {
+                Header("You \\ Dealer");
+                foreach (var (label, moves) in dice.Chart)
+                {
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(label);
+                    foreach (var m in moves)
+                    {
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(m switch { Move.Hit => "H", Move.Stand => "S", Move.Double => "D", _ => "P" });
+                    }
+                }
+            }
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
         Section("Channels", "Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. "
             + "Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.");
         Section("Round result", "Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.");
         Section("Safety", "Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. "
             + "Only your own roll counts as a card, so nobody else can feed you cards. "
             + "If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.");
-        Section("Limits", "English client only. Bets and gil are not handled; stakes are units.");
+        Section("Limits", "English client only. Bets and gil are not handled; stakes are units. The maths assumes best play and the 1-10 rolls are fair.");
+        return;
+
+        void Header(string first)
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(first);
+            foreach (var u in Odds.ChartUpCards)
+            {
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(BlackjackGame.CardName(u));
+            }
+        }
+
+        void Row(string label, Func<int, string> cell)
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(label);
+            foreach (var u in Odds.ChartUpCards)
+            {
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(cell(u));
+            }
+        }
     }
 
     private static void Section(string title, string body)

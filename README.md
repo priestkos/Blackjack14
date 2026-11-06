@@ -36,7 +36,7 @@ These images are **mock-ups** (HTML rendered to PNG). They are not real in-game 
 - **It does not retry.** If no result appears within the pause time, rolling pauses until you press **Resume rolling**. It never re-sends a roll on its own.
 - **It does not handle gil, bets or trades.** Stakes are counted in units, and paying out is up to you.
 - **It does not read anyone else's rolls.** Only your own results count as cards, even in a channel where others are rolling.
-- **It does not choose your moves.** There is no strategy advice and no auto-play for your hand.
+- **It does not choose your moves.** There are no live hints and no auto-play for your hand; the Help tab carries a general best-play chart, and acting on it is up to you.
 
 ## How it works
 
@@ -68,7 +68,7 @@ Settings are locked while a round is in play.
 - **Seconds between sends:** 2-10, default 2.
 - **Pause if no result:** 5-30 s, default 10.
 - **Rules:** dealer hits soft 17 (default off); double after split (default on); blackjack pays 3:2 (default), 6:5, 2:1 or 1:1.
-- **Help tab:** each rule with the reason behind it: dice vs a deck (tens are 10% here, 31% in a deck), why the dealer draws to 17, why you act first, double, split, the natural payout, the channel choices and the safety limits.
+- **Help tab:** each rule with the reason behind it, then the maths for the current settings, computed live by `Odds.cs`: house edge with best play (1.67% at the defaults, 0.49% for the same rules with a deck) and per natural payout, how many rounds before the edge outweighs luck (about 3,450), bust chance when hitting, dealer bust by up-card against a deck, and a best-play chart (hard 12-17, soft 13-20, pairs). With 1-10 rolls doubling never has the best expected value, and best play hits every hard 16.
 - **Older settings files:** a v1 file that rolled in Free Company, PvP Team or a linkshell is moved to Say, and a result that went to that channel goes to Echo instead.
 
 ## Build
@@ -93,10 +93,10 @@ Add `https://raw.githubusercontent.com/priestkos/PlogonYes/main/pluginmaster.jso
 
 ## Tests
 
-The xUnit project compiles `BlackjackGame.cs` on its own, without Dalamud. It covers ace totals, both roll parsers (they accept only d10 results), every roll command and result prefix, the tell-target check (including injection attempts), the v1 settings migration, the card lines relayed by tell, matching the sender's name exactly, the send guard on posted lines, the three rule settings, the deal order, refusing unexpected rolls, bust, the dealer drawing to 17 including soft 17, double, naturals, and split. It also plays 20,000 random rounds to prove every round ends within a bounded number of rolls.
+The xUnit project compiles `BlackjackGame.cs` on its own, without Dalamud. It covers ace totals, both roll parsers (they accept only d10 results), every roll command and result prefix, the tell-target check (including injection attempts), the v1 settings migration, the card lines relayed by tell, matching the sender's name exactly, the send guard on posted lines, the three rule settings, the deal order, refusing unexpected rolls, bust, the dealer drawing to 17 including soft 17, double, naturals, and split. It also plays 20,000 random rounds to prove every round ends within a bounded number of rolls. The odds tests check the house edge and dealer bust figures against an independent Python implementation (to 5 decimal places), and prove the chart claims the Help tab makes for every rule setting. They also play 400,000 rounds of the real game engine with the computed best moves for both soft-17 settings: the simulated result must land within 4 standard errors of the computed edge (it lands within 1).
 
 ```
-dotnet test Blackjack14.Tests    # 71 tests
+dotnet test Blackjack14.Tests    # 88 tests
 ```
 
 ## Limits
@@ -105,6 +105,7 @@ dotnet test Blackjack14.Tests    # 71 tests
 - **English client only.** The roll regexes match the English messages, so on JP, DE or FR clients no roll is recognised and rolling pauses.
 - **Not verified in game:** the chat type a `/dice` line arrives with, and the exact form of your own name as the sender. Both come from reading other plugins' code. If either is wrong, rolls in that channel never register and rolling pauses: it fails safe, not wrong.
 - **`/random` is visible to nearby players** in the /say radius. That is how the game works, and the plugin does not change it.
+- **The maths assumes fair 1-10 rolls and best play.** The spread figure (0.98 units per round) is measured by simulation, not derived; the test keeps it within 0.03.
 - **Tell cards are relayed, not rolled.** The roll is public in say range; the tell carries only the plugin's line, so a player who is not nearby has to trust it.
 - **Echo results need the Echo chat filter ticked** in your chat log tab.
 - **One split per round, and no re-split.** Split aces play on like any other split hand.
@@ -115,6 +116,7 @@ dotnet test Blackjack14.Tests    # 71 tests
 ```
 Blackjack14Plugin.cs    entry point: services, /bj, pacing, chat read, announce, send
 BlackjackGame.cs        pure round logic: rules, hands, totals, moves, dealer, settlement, summary, roll parsers
+Odds.cs                 pure maths: dealer outcomes, house edge, best move and chart, dice vs deck
 Channels.cs             pure channel text: roll commands, result prefixes, tell-target check, labels, sender match, send guard, v1 migration
 Configuration.cs        saved settings and their ranges
 BlackjackWindow.cs      Table / Settings / Help tabs
