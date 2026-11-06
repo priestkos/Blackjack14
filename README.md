@@ -8,6 +8,19 @@ Player-run blackjack in FFXIV, played with `/random 10` or `/dice <channel> 10`.
 
 > **No support will be provided. This software is to be used as is, without warranty of any kind.**
 
+## Screenshots
+
+These images are **mock-ups** (HTML rendered to PNG). They are not real in-game captures and do not show the actual FFXIV client UI.
+
+| | |
+| --- | --- |
+| ![Table mock-up](docs/screenshots/01-table-your-move.png) | **Your move** — Table tab after the deal: A 7 (soft 18) against the dealer's 6, with Hit, Stand and Double enabled. |
+| ![Split round mock-up](docs/screenshots/02-split-round-over.png) | **Split, double and settle** — two hands from a pair of 8s, Hand 2 doubled, dealer stands on soft 18, with per-hand results and the round net. |
+| ![Settings mock-up](docs/screenshots/03-settings.png) | **Settings** — rolls sent with `/dice party 10`, the result posted with `/p`, the pacing sliders and the table rules. |
+| ![Help mock-up](docs/screenshots/04-help.png) | **Help** — the tab `/bj help` opens: cards, a round, moves, channels, result, safety and limits. |
+| ![Say radius rolls mock-up](docs/screenshots/05-random-chat-result.png) | **`/random 10` in the say radius** — each `Random! You roll a N (out of 10).` line becomes a card, and the round result is echoed as one line. |
+| ![Party dice mock-up](docs/screenshots/06-dice-party-dealing.png) | **`/dice party 10`** — only your own roll counts as a card; another party member's roll is ignored. |
+
 ## What it does
 
 - **Deals for you.** **Deal** rolls three times: two cards for you, then the dealer's up-card.
@@ -104,5 +117,6 @@ Configuration.cs        saved settings and their ranges
 BlackjackWindow.cs      Table / Settings / Help tabs
 Blackjack14.Tests/      xUnit tests over BlackjackGame.cs and Channels.cs
 images/                 icon.svg (source) and icon.png (manifest icon)
+docs/screenshots/       mock-up screenshots used in this README
 .github/workflows/      build.yml (build + tests on every push), release.yml (tests, build, release on main)
 ```

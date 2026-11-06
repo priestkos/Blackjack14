@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mock-up: Say radius rolls and result</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <div class="game-backdrop"></div>
+    <div class="mockup-banner">Mock-up</div>
+    <div class="scene-label">Say radius — Deal rolls A, 7, then 6; after Stand the dealer draws 10, 5; result echoed in one line</div>
+    <div class="chat-panel">
+      <div class="chat-line random">Random! You roll a 1 (out of 10).</div>
+      <div class="chat-line random">Random! You roll a 7 (out of 10).</div>
+      <div class="chat-line random">Random! You roll a 6 (out of 10).</div>
+      <div class="chat-line random">Random! You roll a 10 (out of 10).</div>
+      <div class="chat-line random">Random! You roll a 5 (out of 10).</div>
+      <div class="chat-line echo">Blackjack: you 18 lose | dealer 21 | -1 unit(s)</div>
+    </div>
+    <div class="chat-hint">Illustrative chat lines — not a real client log</div>
+    <div class="imgui-window" style="top: 70px; right: 48px; width: 460px;">
+      <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+      <div class="imgui-body">
+        <div class="tabs"><span class="tab active">Table</span><span class="tab">Settings</span><span class="tab">Help</span></div>
+        <div class="t">  Dealer: 6 10 5  = 21</div>
+        <div class="t">  You: A 7  = soft 18</div>
+        <div class="sep"></div>
+        <div class="t">Round over.</div>
+        <div class="btns"><span class="btn">Deal</span><span class="btn disabled">Hit</span><span class="btn disabled">Stand</span><span class="btn disabled">Double</span><span class="btn disabled">Split</span></div>
+        <div class="btn">Abandon round</div>
+        <div class="t">Hand 1: 18 vs 21 - lose (-1 unit)</div>
+        <div class="t">Round: -1 unit(s)</div>
+      </div>
+    </div>
+  </body>
+</html>

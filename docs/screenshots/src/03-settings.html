@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mock-up: Settings</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <div class="game-backdrop"></div>
+    <div class="mockup-banner">Mock-up</div>
+    <div class="scene-label">Settings tab — rolls via /dice party 10, result posted with /p, pacing sliders, table rules</div>
+    <div class="imgui-window" style="top: 70px; left: 380px; width: 520px;">
+      <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+      <div class="imgui-body">
+        <div class="tabs"><span class="tab">Table</span><span class="tab active">Settings</span><span class="tab">Help</span></div>
+        <div class="t">Channels</div>
+        <div class="field-row"><div class="combo">Party</div><span>Rolls go to</span></div>
+        <div class="t dis">Sends: /dice party 10</div>
+        <div class="field-row"><div class="combo">Roll channel</div><span>Round result</span></div>
+        <div class="t dis">Posts with /p, visible to that channel.</div>
+        <div class="sep"></div>
+        <div class="t">Pacing</div>
+        <div class="field-row"><div class="slider"><div class="grab" style="left: calc(0% * 0.94)"></div><span>2</span></div><span>Seconds between rolls</span></div>
+        <div class="field-row"><div class="slider"><div class="grab" style="left: calc(20% * 0.94)"></div><span>10</span></div><span>Pause if no result (s)</span></div>
+        <div class="sep"></div>
+        <div class="t">Rules</div>
+        <div class="field-row"><span class="checkbox-box"></span><span>Dealer hits soft 17</span></div>
+        <div class="field-row"><span class="checkbox-box">✓</span><span>Double after split</span></div>
+        <div class="field-row"><div class="combo">3:2</div><span>Blackjack pays</span></div>
+      </div>
+    </div>
+  </body>
+</html>

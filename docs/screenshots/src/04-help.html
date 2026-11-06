@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mock-up: Help tab</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <div class="game-backdrop"></div>
+    <div class="mockup-banner">Mock-up</div>
+    <div class="scene-label">Help tab — /bj help opens it: cards, a round, moves, channels, result, safety, limits</div>
+    <div class="imgui-window" style="top: 56px; left: 330px; width: 620px; font-size: 13px;">
+      <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+      <div class="imgui-body">
+        <div class="tabs"><span class="tab">Table</span><span class="tab">Settings</span><span class="tab active">Help</span></div>
+        <div class="t">Cards</div>
+        <div class="wrap">Each card is one roll of 1-10. 1 = Ace (1 or 11). 10 = face card. Closest to 21 without going over wins.</div>
+        <div class="t">A round</div>
+        <div class="wrap">Deal rolls 3 cards: 2 yours, 1 dealer&#x27;s. You choose moves; the plugin rolls the cards. After you stand, the dealer draws to 17. 21 stands automatically.</div>
+        <div class="t">Moves</div>
+        <div class="wrap">Hit: one card.  Stand: end the hand.  Double: first two cards only; one card at 2x stake, then stand.  Split: a pair becomes two hands, each dealt a second card.</div>
+        <div class="t">Channels</div>
+        <div class="wrap">Say radius uses /random 10. Any other choice uses /dice &lt;channel&gt; 10, seen only by that channel. Only your own roll in that channel counts as a card.</div>
+        <div class="t">Round result</div>
+        <div class="wrap">Off, Echo (only you see it), or posted to the roll channel as one line.</div>
+        <div class="t">Safety</div>
+        <div class="wrap">Nothing rolls until you press a button, never faster than the set spacing (2 s minimum). No result within the pause time stops rolling until you press Resume. Logging out abandons the round.</div>
+        <div class="t">Limits</div>
+        <div class="wrap">English client only. Bets and gil are not handled; stakes are units.</div>
+      </div>
+    </div>
+  </body>
+</html>

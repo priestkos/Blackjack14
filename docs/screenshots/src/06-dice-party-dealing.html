@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mock-up: Dice in party</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <div class="game-backdrop"></div>
+    <div class="mockup-banner">Mock-up</div>
+    <div class="scene-label">/dice party 10 — only your own roll becomes a card; another member&#x27;s roll is ignored; dealer up-card rolling</div>
+    <div class="chat-panel">
+      <div class="chat-line party">(Wol Adventurer) Random! (1-10) 4</div>
+      <div class="chat-line party other">(Party Member) Random! (1-10) 2</div>
+      <div class="chat-line party">(Wol Adventurer) Random! (1-10) 9</div>
+    </div>
+    <div class="chat-hint">Illustrative chat lines — not a real client log</div>
+    <div class="imgui-window" style="top: 70px; right: 48px; width: 460px;">
+      <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+      <div class="imgui-body">
+        <div class="tabs"><span class="tab active">Table</span><span class="tab">Settings</span><span class="tab">Help</span></div>
+        <div class="t">  Dealer: -</div>
+        <div class="t">  You: 4 9  = 13</div>
+        <div class="sep"></div>
+        <div class="t">Rolling...</div>
+        <div class="btns"><span class="btn disabled">Deal</span><span class="btn disabled">Hit</span><span class="btn disabled">Stand</span><span class="btn disabled">Double</span><span class="btn disabled">Split</span></div>
+        <div class="btn">Abandon round</div>
+      </div>
+    </div>
+    <div class="callout" style="left: 600px; bottom: 120px">Only your own /dice line counts as a card; other members rolling in the same channel are ignored.</div>
+  </body>
+</html>
