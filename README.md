@@ -21,6 +21,13 @@ These images are **mock-ups** (HTML rendered to PNG). They are not real in-game 
 | ![Tell rolls mock-up](docs/screenshots/05-random-chat-result.png) | **Tell** — each `Random! You roll a N (out of 10).` in the say radius becomes a card and is told to the player (`Card: A (you soft 11)`, `Dealer card: 10 (dealer 16)`); the round result is echoed and told as one line. |
 | ![Party dice mock-up](docs/screenshots/06-dice-party-dealing.png) | **`/dice party 10`** — only your own roll counts as a card; another party member's roll is ignored. |
 
+## Mock-up video
+
+A short **mock-up** walkthrough (not real gameplay) cross-fades through the Settings, Table and Help tabs with bottom captions. The gold **Mock-up** label stays visible for the whole clip.
+
+- [mockup-walkthrough.mp4](docs/videos/mockup-walkthrough.mp4) (H.264, 1280×720, ~15 s)
+- [mockup-walkthrough.gif](docs/videos/mockup-walkthrough.gif) (preview)
+
 ## What it does
 
 - **Deals for you.** **Deal** rolls three times: two cards for you, then the dealer's up-card.
@@ -123,5 +130,6 @@ BlackjackWindow.cs      Table / Settings / Help tabs
 Blackjack14.Tests/      xUnit tests over BlackjackGame.cs and Channels.cs
 images/                 icon.svg (source) and icon.png (manifest icon)
 docs/screenshots/       mock-up screenshots used in this README
+docs/videos/            mock-up walkthrough video (mp4 + gif) used in this README
 .github/workflows/      build.yml (build + tests on every push), release.yml (tests, build, release on main)
 ```

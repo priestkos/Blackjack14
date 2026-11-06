@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Blackjack14 mock-up walkthrough</title>
+    <link rel="stylesheet" href="../../screenshots/src/common.css" />
+    <style>
+      .scene { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+
+      .video-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9000;
+        padding: 14px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        text-align: center;
+        color: #fff;
+        background: linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.5) 70%, transparent 100%);
+        text-shadow: 0 1px 4px #000;
+      }
+
+      .mockup-banner { font-size: 14px; padding: 8px 16px; }
+
+      /* clear of the bottom caption */
+      .chat-panel { bottom: 96px; }
+      .chat-hint { bottom: 76px; }
+      .chat-line { opacity: 0; }
+
+      .popup {
+        position: absolute;
+        left: 0;
+        top: 100%;
+        width: 230px;
+        z-index: 2;
+        padding: 3px 0;
+        background: #1e1e26;
+        border: 1px solid #3a3a44;
+        border-radius: 3px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      }
+      .popup div { padding: 1px 8px; }
+      .popup .sel { background: #3d3d48; }
+      .popup .hover { background: #4a5a78; }
+      .field-row { position: relative; }
+
+      .btn.press { filter: brightness(1.5); transform: scale(0.96); }
+
+      .help-view { height: 530px; overflow: hidden; }
+      .grid { border-collapse: collapse; margin: 2px 0 8px; }
+      .grid td { border: 1px solid #43434d; padding: 0 6px; text-align: center; white-space: pre; }
+      .grid td:first-child { text-align: left; }
+      .scroll { position: absolute; top: 30px; right: 2px; bottom: 2px; width: 12px; background: #1c1c22; border-radius: 6px; }
+      .scroll .grab { position: absolute; left: 1px; right: 1px; height: 33%; background: #5a5a66; border-radius: 6px; }
+
+      #mock-cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 8500;
+        width: 26px;
+        height: 26px;
+        opacity: 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-backdrop"></div>
+    <div class="mockup-banner">Mock-up</div>
+
+    <!-- Settings tab: pick the roll channel -->
+    <div id="scene1" class="scene">
+      <div class="imgui-window" style="top: 70px; left: 380px; width: 520px; font-size: 13px">
+        <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+        <div class="imgui-body" style="line-height: 1.4">
+          <div class="tabs"><span class="tab">Table</span><span class="tab active">Settings</span><span class="tab">Help</span></div>
+          <div class="t">Rolls</div>
+          <div class="field-row">
+            <div class="combo" id="s1-combo">Say (/random)</div><span>Rolls go to</span>
+            <div class="popup" id="s1-popup" style="display: none">
+              <div class="sel">Say (/random)</div>
+              <div id="s1-party">Party (/dice)</div>
+              <div>Alliance (/dice)</div>
+              <div>Tell (/random + card by tell)</div>
+            </div>
+          </div>
+          <div class="t dis" id="s1-sends">Sends: /random 10</div>
+          <div class="sep"></div>
+          <div class="t">Round result goes to</div>
+          <div class="field-row"><span class="checkbox-box">✓</span><span>Echo (only you)</span></div>
+          <div class="field-row"><span class="checkbox-box"></span><span>Say</span></div>
+          <div class="field-row"><span class="checkbox-box"></span><span>Party</span></div>
+          <div class="field-row"><span class="checkbox-box"></span><span>Alliance</span></div>
+          <div class="field-row"><span class="checkbox-box"></span><span>Tell</span></div>
+          <div class="sep"></div>
+          <div class="t">Pacing</div>
+          <div class="field-row"><div class="slider"><div class="grab" style="left: calc(0% * 0.94)"></div><span>2</span></div><span>Seconds between sends</span></div>
+          <div class="field-row"><div class="slider"><div class="grab" style="left: calc(20% * 0.94)"></div><span>10</span></div><span>Pause if no result (s)</span></div>
+          <div class="sep"></div>
+          <div class="t">Rules</div>
+          <div class="field-row"><span class="checkbox-box"></span><span>Dealer hits soft 17</span></div>
+          <div class="field-row"><span class="checkbox-box">✓</span><span>Double after split</span></div>
+          <div class="field-row"><div class="combo">3:2</div><span>Blackjack pays</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table tab: deal, your move, dealer, result -->
+    <div id="scene2" class="scene">
+      <div class="chat-panel" id="s2-chat">
+        <div class="chat-line party" data-at="3.7">(Wol Adventurer) Random! (1-10) 1</div>
+        <div class="chat-line party other" data-at="4.4">(Party Member) Random! (1-10) 2</div>
+        <div class="chat-line party" data-at="4.8">(Wol Adventurer) Random! (1-10) 7</div>
+        <div class="chat-line party" data-at="5.6">(Wol Adventurer) Random! (1-10) 6</div>
+        <div class="chat-line party" data-at="8.3">(Wol Adventurer) Random! (1-10) 10</div>
+        <div class="chat-line party" data-at="9.3">(Wol Adventurer) Random! (1-10) 8</div>
+        <div class="chat-line echo" data-at="9.6">Blackjack: you 18 win | dealer bust | +1 unit(s)</div>
+      </div>
+      <div class="chat-hint">Illustrative chat lines — not a real client log</div>
+      <div class="imgui-window" style="top: 70px; right: 48px; width: 460px">
+        <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+        <div class="imgui-body">
+          <div class="tabs"><span class="tab active">Table</span><span class="tab">Settings</span><span class="tab">Help</span></div>
+          <div id="s2-hands"></div>
+          <div class="sep"></div>
+          <div class="t" id="s2-status"></div>
+          <div class="btns">
+            <span class="btn" id="b-deal">Deal</span><span class="btn" id="b-hit">Hit</span><span class="btn" id="b-stand">Stand</span><span class="btn" id="b-double">Double</span><span class="btn" id="b-split">Split</span>
+          </div>
+          <div class="btn" id="b-abandon">Abandon round</div>
+          <div id="s2-results"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help tab: live odds -->
+    <div id="scene3" class="scene">
+      <div class="imgui-window" style="top: 60px; left: 190px; width: 900px; height: 600px; overflow: hidden; font-size: 13px">
+        <div class="imgui-titlebar"><span>Blackjack</span><span class="close">✕</span></div>
+        <div class="imgui-body" style="line-height: 1.35; padding-right: 22px">
+          <div class="tabs"><span class="tab">Table</span><span class="tab">Settings</span><span class="tab active">Help</span></div>
+          <div class="help-view"><div id="help-content"><div class="t">Cards</div>
+<div class="wrap">One roll of 1-10 is one card. 1 is an Ace, 10 is a face card. Closest to 21 without going over wins. Why: a 1-10 roll gives every value the same 10% chance and the roll is shown in chat (to everyone in say range for Say and Tell, to the group for Party and Alliance), so nobody has to trust a hidden deck.</div>
+          <div class="t">Ace counts 1 or 11</div>
+<div class="wrap">It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is &#39;soft&#39; and can take a card without busting.</div>
+          <div class="t">Tens are rarer here</div>
+<div class="wrap">A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. The average card is 5.5 here and 6.5 in a deck. Why: 20s and naturals come up less often, and the dealer busts less: 22.4% of dealer hands bust here, 28.2% with a deck.</div>
+          <div class="t">The dealer draws to 17</div>
+<div class="wrap">Below 17 the dealer must hit; on 17 or more the dealer must stand. Why: a fixed rule means the dealer makes no choices and cannot favour anyone. 17 is the standard casino line.</div>
+          <div class="t">Dealer hits soft 17 (setting)</div>
+<div class="wrap">Makes the dealer draw again on Ace+6. Why: it raises the house edge from 1.67% to 3.27%, so it is off by default. It costs far more here than with a deck (0.49% to 0.71%): from soft 17 the next card makes 18-21 40% of the time here, 31% with a deck.</div>
+          <div class="t">You act first</div>
+<div class="wrap">If you bust you lose, even if the dealer busts afterwards. Why: this is where the house&#39;s edge comes from in blackjack.</div>
+          <div class="t">Double</div>
+<div class="wrap">First two cards only: the stake doubles, you take exactly one card, then stand. Why: it is meant for a strong start such as 10 or 11. With 1-10 rolls it never has the best expected value, under any setting: an 11 becomes 21 only 10% of the time (31% with a deck), so one card at double stake is worse than hitting freely.</div>
+          <div class="t">Split</div>
+<div class="wrap">Only on a pair, once per round. Each card starts its own hand. Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 can still win. One split keeps the round short. The chart below shows which pairs to split.</div>
+          <div class="t">Double after split (setting)</div>
+<div class="wrap">Lets each split hand double on its first two cards. With 1-10 rolls it changes nothing, because doubling never pays here. With a deck it is worth 0.12% to the player.</div>
+          <div class="t">Blackjack (natural)</div>
+<div class="wrap">Ace + 10 on your first two cards: 2.0% of hands here, 4.7% with a deck. It pays 3:2 by default and ties a dealer natural. Why: it is the best hand and rare, so it pays more. A 21 after a split is an ordinary 21: it is not your original two-card hand (the standard casino rule).</div>
+          <div class="t">21 stands automatically</div>
+<div class="wrap">Why: no card can improve 21.</div>
+          <div class="sep"></div>
+          <div class="t" id="maths">The maths (current settings, best play)</div>
+          <div class="t">House edge</div>
+<div class="wrap">You lose 1.67% of every unit staked on average: 1.7 units per 100. The same rules with a deck: 0.49%. By natural payout: 3:2 1.67%, 6:5 2.26%, 2:1 0.69%, 1:1 2.65%.</div>
+          <div class="t">Luck against the edge</div>
+<div class="wrap">One round swings about 0.98 units either way (standard deviation). Over n rounds the edge costs n x 1.67% of a unit, while luck spreads about 0.98 x sqrt(n), so the edge only outweighs luck after about 3,450 rounds.</div>
+          <div class="t">Busting when you hit</div>
+<div class="wrap">A hard total t of 12 or more busts on the next card (t - 11) x 10% of the time: 12 10%, 14 30%, 16 50%, 20 90%. With a deck: 12 31%, 16 62%. That is why the chart hits more than a casino chart does.</div>
+          <div class="t">Dealer busts, by up-card</div>
+<table class="grid">
+<tr><td></td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>A</td></tr>
+<tr><td>Dice</td><td>23%</td><td>24%</td><td>25%</td><td>27%</td><td>28%</td><td>26%</td><td>23%</td><td>21%</td><td>19%</td><td>7%</td></tr>
+<tr><td>Deck</td><td>35%</td><td>37%</td><td>39%</td><td>42%</td><td>42%</td><td>26%</td><td>24%</td><td>23%</td><td>21%</td><td>12%</td></tr>
+</table>
+          <div class="t">Best play: H hit, S stand, D double, P split</div>
+<div class="wrap">Hard 11 or less: always hit. Hard 18 or more, and soft 19 or more: always stand.</div>
+<table class="grid">
+<tr><td>You \ Dealer</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>A</td></tr>
+<tr><td>Hard 12</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 13</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 14</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 15</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 16</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Hard 17</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>H</td></tr>
+<tr><td>Soft 13</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 14</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 15</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 16</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 17</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 18</td><td>H</td><td>H</td><td>H</td><td>H</td><td>S</td><td>S</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Soft 19</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Soft 20</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Pair As</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td></tr>
+<tr><td>Pair 2s</td><td>H</td><td>H</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 3s</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 4s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>P</td><td>P</td><td>P</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 5s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 6s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 7s</td><td>H</td><td>H</td><td>H</td><td>H</td><td>P</td><td>P</td><td>H</td><td>H</td><td>H</td><td>H</td></tr>
+<tr><td>Pair 8s</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td>H</td></tr>
+<tr><td>Pair 9s</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+<tr><td>Pair 10s</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td><td>S</td></tr>
+</table>
+          <div class="sep"></div>
+          <div class="t">Channels</div>
+<div class="wrap">Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.</div>
+          <div class="t">Round result</div>
+<div class="wrap">Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.</div>
+          <div class="t">Safety</div>
+<div class="wrap">Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. Only your own roll counts as a card, so nobody else can feed you cards. If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.</div>
+          <div class="t">Limits</div>
+<div class="wrap">English client only. Bets and gil are not handled; stakes are units. The maths assumes best play and the 1-10 rolls are fair.</div>
+          </div></div>
+        </div>
+        <div class="scroll"><div class="grab" id="help-grab"></div></div>
+      </div>
+    </div>
+
+    <div class="video-caption" id="caption"></div>
+    <svg id="mock-cursor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 3L5 19L9 15L13 21L15 20L11 14L17 14L5 3Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.2" stroke-linejoin="round" />
+    </svg>
+
+    <script>
+      const scenes = [
+        { id: "scene1", start: 0, end: 3.0 },
+        { id: "scene2", start: 2.6, end: 11.8 },
+        { id: "scene3", start: 11.4, end: 15.0 },
+      ];
+
+      // One caption per beat, each naming a real screen or feature.
+      const captions = [
+        { until: 2.8, text: "Settings tab — Rolls go to: Party (/dice) sends /dice party 10" },
+        { until: 6.1, text: "Table tab — Deal rolls your two cards and the dealer's up-card; only your own rolls count" },
+        { until: 7.9, text: "Your move — Hit, Stand or Double (Split only on a pair)" },
+        { until: 11.6, text: "Dealer draws to 17 — per-hand result, round net, and one result line to Echo" },
+        { until: 99, text: "Help tab (/bj help) — the maths for the current settings: house edge, dealer bust, best-play chart" },
+      ];
+
+      // Table state by time: derived by hand from BlackjackGame (A 7 vs 6, stand, dealer 6 10 8 bust).
+      const table = [
+        { t: 0, hands: null, status: "Ready.", enabled: ["deal"] },
+        { t: 3.3, hands: ["  Dealer: -", "  You: -"], status: "Rolling...", enabled: [] },
+        { t: 3.7, hands: ["  Dealer: -", "  You: A  = soft 11"], status: "Dealing...", enabled: [] },
+        { t: 4.2, hands: ["  Dealer: -", "  You: A  = soft 11"], status: "Rolling...", enabled: [] },
+        { t: 4.8, hands: ["  Dealer: -", "  You: A 7  = soft 18"], status: "Dealing...", enabled: [] },
+        { t: 5.2, hands: ["  Dealer: -", "  You: A 7  = soft 18"], status: "Rolling...", enabled: [] },
+        { t: 5.6, hands: ["  Dealer: 6  = 6", "> You: A 7  = soft 18"], status: "Your move.", enabled: ["hit", "stand", "double"] },
+        { t: 7.6, hands: ["  Dealer: 6  = 6", "  You: A 7  = soft 18"], status: "Dealer draws to 17...", enabled: [] },
+        { t: 7.9, hands: ["  Dealer: 6  = 6", "  You: A 7  = soft 18"], status: "Rolling...", enabled: [] },
+        { t: 8.3, hands: ["  Dealer: 6 10  = 16", "  You: A 7  = soft 18"], status: "Dealer draws to 17...", enabled: [] },
+        { t: 8.9, hands: ["  Dealer: 6 10  = 16", "  You: A 7  = soft 18"], status: "Rolling...", enabled: [] },
+        {
+          t: 9.3,
+          hands: ["  Dealer: 6 10 8  = 24 BUST", "  You: A 7  = soft 18"],
+          status: "Round over.",
+          enabled: ["deal"],
+          results: ["Hand 1: 18 vs 24 - dealer bust, win (+1 unit)", "Round: +1 unit(s)"],
+        },
+      ];
+
+      const clicks = [
+        { t: 0.8, el: "s1-combo" },
+        { t: 1.6, el: "s1-party" },
+        { t: 3.3, el: "b-deal" },
+        { t: 7.6, el: "b-stand" },
+      ];
+      const cursorPath = [
+        { t: 0.2, at: [640, 520] },
+        { t: 0.75, el: "s1-combo" },
+        { t: 1.1, el: "s1-combo" },
+        { t: 1.55, el: "s1-party" },
+        { t: 2.5, at: [760, 520] },
+        { t: 3.25, el: "b-deal" },
+        { t: 4.0, at: [940, 420] },
+        { t: 6.8, at: [940, 420] },
+        { t: 7.55, el: "b-stand" },
+        { t: 9.0, at: [1000, 440] },
+      ];
+      const cursorVisible = (t) => (t >= 0.2 && t <= 2.7) || (t >= 2.9 && t <= 11.3);
+
+      const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+      const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+      function sceneMotion(t, start, end) {
+        const fade = 0.45;
+        if (t < start || t > end) return { opacity: 0, ty: t < start ? 14 : -10 };
+        if (start > 0 && t < start + fade) {
+          const e = easeOut((t - start) / fade);
+          return { opacity: e, ty: 14 * (1 - e) };
+        }
+        if (end < 15 && t > end - fade) {
+          const e = easeOut((end - t) / fade);
+          return { opacity: e, ty: -10 * (1 - e) };
+        }
+        return { opacity: 1, ty: 0 };
+      }
+
+      function point(k) {
+        if (k.at) return k.at;
+        const r = document.getElementById(k.el).getBoundingClientRect();
+        return [r.left + r.width / 2, r.top + r.height / 2];
+      }
+
+      function cursorAt(t) {
+        if (t <= cursorPath[0].t) return point(cursorPath[0]);
+        for (let i = 0; i < cursorPath.length - 1; i++) {
+          const a = cursorPath[i];
+          const b = cursorPath[i + 1];
+          if (t <= b.t) {
+            const p = ease((t - a.t) / (b.t - a.t));
+            const [ax, ay] = point(a);
+            const [bx, by] = point(b);
+            return [ax + (bx - ax) * p, ay + (by - ay) * p];
+          }
+        }
+        return point(cursorPath[cursorPath.length - 1]);
+      }
+
+      window.seekWalkthrough = function (t) {
+        for (const s of scenes) {
+          const { opacity, ty } = sceneMotion(t, s.start, s.end);
+          const el = document.getElementById(s.id);
+          el.style.opacity = String(opacity);
+          el.style.transform = `translateY(${ty}px)`;
+        }
+        document.getElementById("caption").textContent = captions.find((c) => t < c.until).text;
+
+        // Settings: open the combo, pick Party (/dice).
+        const party = t >= 1.6;
+        document.getElementById("s1-popup").style.display = t >= 0.8 && t < 1.6 ? "" : "none";
+        document.getElementById("s1-party").classList.toggle("hover", t >= 1.3);
+        document.getElementById("s1-combo").textContent = party ? "Party (/dice)" : "Say (/random)";
+        document.getElementById("s1-sends").textContent = party ? "Sends: /dice party 10" : "Sends: /random 10";
+
+        // Table
+        const st = table.filter((s) => t >= s.t).pop();
+        document.getElementById("s2-hands").innerHTML = st.hands
+          ? st.hands.map((h) => `<div class="t">${h.replace(">", "&gt;")}</div>`).join("")
+          : '<div class="t dis">Deal to start. Rolls go to: Party (/dice).</div>';
+        document.getElementById("s2-status").textContent = st.status;
+        for (const b of ["deal", "hit", "stand", "double", "split"]) {
+          const el = document.getElementById("b-" + b);
+          el.classList.toggle("disabled", !st.enabled.includes(b));
+          el.classList.toggle("press", clicks.some((c) => c.el === "b-" + b && t >= c.t && t < c.t + 0.15));
+        }
+        document.getElementById("b-abandon").style.display = st.hands ? "" : "none";
+        document.getElementById("s2-results").innerHTML = (st.results || []).map((r) => `<div class="t">${r}</div>`).join("");
+        for (const line of document.querySelectorAll("#s2-chat .chat-line")) {
+          const e = easeOut(clamp((t - parseFloat(line.dataset.at)) / 0.28, 0, 1));
+          line.style.opacity = String(line.classList.contains("other") ? 0.6 * e : e);
+          line.style.display = t >= parseFloat(line.dataset.at) ? "" : "none";
+        }
+
+        // Help: scroll from the rules down to the maths.
+        const view = document.querySelector(".help-view");
+        const content = document.getElementById("help-content");
+        const max = content.scrollHeight - view.clientHeight;
+        const target = Math.min(max, document.getElementById("maths").getBoundingClientRect().top - content.getBoundingClientRect().top - 6);
+        const p = ease(clamp((t - 12.0) / 1.6, 0, 1));
+        content.style.transform = `translateY(${-target * p}px)`;
+        document.getElementById("help-grab").style.top = `${(67 * target * p) / max}%`;
+
+        const cursor = document.getElementById("mock-cursor");
+        const [x, y] = cursorAt(t);
+        cursor.style.opacity = cursorVisible(t) ? "1" : "0";
+        cursor.style.transform = `translate(${x - 5}px, ${y - 3}px)`;
+      };
+
+      seekWalkthrough(0);
+    </script>
+  </body>
+</html>
