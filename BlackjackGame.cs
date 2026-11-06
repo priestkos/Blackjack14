@@ -4,6 +4,14 @@ namespace Blackjack14;
 
 public enum Phase { Idle, Dealing, Player, Dealer, Done }
 
+/// <summary>Table rules. Saved in the plugin config; only editable between rounds.</summary>
+public sealed class Rules
+{
+    public bool DealerHitsSoft17 { get; set; }
+    public bool DoubleAfterSplit { get; set; } = true;
+    public decimal NaturalPays { get; set; } = 1.5m;
+}
+
 public sealed class Hand
 {
     public List<int> Cards { get; } = new();
@@ -28,8 +36,11 @@ public sealed class Hand
 /// <summary>One round: the player's hand(s) against a dealer who draws to 17. Pure logic, no Dalamud.</summary>
 public sealed partial class BlackjackGame
 {
-    public const string RollCommand = "/random 10";
     public const int DealerStandsOn = 17;
+
+    public Rules Rules { get; }
+
+    public BlackjackGame(Rules? rules = null) => Rules = rules ?? new Rules();
 
     public Phase Phase { get; private set; } = Phase.Idle;
     public List<Hand> PlayerHands { get; } = new();
@@ -52,7 +63,7 @@ public sealed partial class BlackjackGame
     private bool Deciding => Phase == Phase.Player && !NeedsCard;
     public bool CanHit => Deciding;
     public bool CanStand => Deciding;
-    public bool CanDouble => Deciding && Active.Cards.Count == 2;
+    public bool CanDouble => Deciding && Active.Cards.Count == 2 && (PlayerHands.Count == 1 || Rules.DoubleAfterSplit);
     public bool CanSplit => Deciding && PlayerHands.Count == 1 && Active.Cards.Count == 2 && Active.Cards[0] == Active.Cards[1];
 
     public void Deal()
@@ -62,6 +73,7 @@ public sealed partial class BlackjackGame
         Dealer = new Hand();
         ActiveIndex = 0;
         Results.Clear();
+        outcomes.Clear();
         Net = 0;
         cardOwed = false;
         Phase = Phase.Dealing;
@@ -119,7 +131,7 @@ public sealed partial class BlackjackGame
 
             case Phase.Dealer:
                 Dealer.Cards.Add(roll);
-                if (Dealer.Total >= DealerStandsOn) Settle();
+                if (DealerStands) Settle();
                 break;
         }
 
@@ -140,6 +152,9 @@ public sealed partial class BlackjackGame
         else Phase = Phase.Dealer;
     }
 
+    private bool DealerStands =>
+        Dealer.Total > DealerStandsOn || Dealer.Total == DealerStandsOn && !(Rules.DealerHitsSoft17 && Dealer.IsSoft);
+
     private bool IsNatural(Hand h) => PlayerHands.Count == 1 && h.IsTwoCard21;
 
     private void Settle()
@@ -149,29 +164,41 @@ public sealed partial class BlackjackGame
         for (var i = 0; i < PlayerHands.Count; i++)
         {
             var h = PlayerHands[i];
-            var (text, net) = h switch
+            var (text, word, net) = h switch
             {
-                _ when h.IsBust => ("bust", -h.Stake),
-                _ when IsNatural(h) && dealerNatural => ("push (both blackjack)", 0m),
-                _ when IsNatural(h) => ("blackjack, pays 3:2", 1.5m * h.Stake),
-                _ when dealerNatural => ("dealer blackjack", -h.Stake),
-                _ when Dealer.IsBust => ("dealer bust, win", h.Stake),
-                _ when h.Total > Dealer.Total => ("win", h.Stake),
-                _ when h.Total == Dealer.Total => ("push", 0m),
-                _ => ("lose", -h.Stake),
+                _ when h.IsBust => ("bust", "bust", -h.Stake),
+                _ when IsNatural(h) && dealerNatural => ("push (both blackjack)", "push", 0m),
+                _ when IsNatural(h) => ("blackjack", "blackjack", Rules.NaturalPays * h.Stake),
+                _ when dealerNatural => ("dealer blackjack", "lose", -h.Stake),
+                _ when Dealer.IsBust => ("dealer bust, win", "win", h.Stake),
+                _ when h.Total > Dealer.Total => ("win", "win", h.Stake),
+                _ when h.Total == Dealer.Total => ("push", "push", 0m),
+                _ => ("lose", "lose", -h.Stake),
             };
             Net += net;
             Results.Add($"Hand {i + 1}: {h.Total} vs {Dealer.Total} - {text} ({net:+0.#;-0.#;0} unit)");
+            outcomes.Add($"{h.Total} {word}");
         }
     }
 
-    // Own /random result, English client: "Random! You roll a 7 (out of 10)." (format confirmed in GamblePyon and ChatDeathRoll2).
-    [GeneratedRegex(@"^Random! You roll a (\d+) \(out of 10\)\.$")]
-    private static partial Regex OwnRollRegex();
+    private readonly List<string> outcomes = new();
 
-    public static int? TryParseOwnRoll(string text)
+    /// <summary>One chat line for the finished round, e.g. "Blackjack: you 19 win | dealer 18 | +1 unit".</summary>
+    public string Summary =>
+        $"Blackjack: you {string.Join(", ", outcomes)} | dealer {(Dealer.IsBust ? "bust" : Dealer.Total.ToString())} | {Net:+0.#;-0.#;0} unit(s)";
+
+    // English client formats, each confirmed in both GamblePyon and ChatDeathRoll2:
+    // /random 10 -> "Random! You roll a 7 (out of 10)." (RandomNumber channel, no sender)
+    // /dice <mode> 10 -> "Random! (1-10) 7" (the chosen channel, sender = the roller)
+    [GeneratedRegex(@"^Random! You roll a (\d+) \(out of 10\)\.$")]
+    private static partial Regex OwnRandomRegex();
+
+    [GeneratedRegex(@"^Random! \(1-10\) (\d+)$")]
+    private static partial Regex DiceRegex();
+
+    public static int? TryParseRoll(string text, bool dice)
     {
-        var m = OwnRollRegex().Match(text.Trim());
+        var m = (dice ? DiceRegex() : OwnRandomRegex()).Match(text.Trim());
         return m.Success ? int.Parse(m.Groups[1].Value) : null;
     }
 

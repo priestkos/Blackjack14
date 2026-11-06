@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\BlackjackGame.cs" Link="BlackjackGame.cs" />
+    <Compile Include="..\Channels.cs" Link="Channels.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
