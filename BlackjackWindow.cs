@@ -202,7 +202,7 @@ public sealed class BlackjackWindow : Window
             + "Why: a 1-10 roll gives every value the same 10% chance and the roll is shown in chat (to everyone in say range for Say and Tell, "
             + "to the group for Party and Alliance), so nobody has to trust a hidden deck.");
         Section("Ace counts 1 or 11", "It counts as 11 whenever that does not bust you. Why: the Ace is never a bad card, so a hand with one is 'soft' and can take a card without busting.");
-        Section("Tens are rarer here", "A deck has four 10-value ranks (10, J, Q, K), so 31% of its cards are tens; a roll of 10 is 10%. "
+        Section("Tens are rarer here", $"A deck has four 10-value ranks (10, J, Q, K), so {Pct(Odds.Deck[10], 0)} of its cards are tens; a roll of 10 is {Pct(Odds.Dice[10], 0)}. "
             + $"The average card is {dice.CardAverage.ToString("0.0", CultureInfo.InvariantCulture)} here and {deck.CardAverage.ToString("0.0", CultureInfo.InvariantCulture)} in a deck. "
             + $"Why: 20s and naturals come up less often, and the dealer busts less: {Pct(dice.DealerBustOverall)} of dealer hands bust here, {Pct(deck.DealerBustOverall)} with a deck.");
         Section("The dealer draws to 17", "Below 17 the dealer must hit; on 17 or more the dealer must stand. "
@@ -210,11 +210,11 @@ public sealed class BlackjackWindow : Window
         Section("Dealer hits soft 17 (setting)", "Makes the dealer draw again on Ace+6. "
             + $"Why: it raises the house edge from {Pct(Odds.For(With(h17: false)).HouseEdge, 2)} to {Pct(Odds.For(With(h17: true)).HouseEdge, 2)}, so it is off by default. "
             + $"It costs far more here than with a deck ({Pct(Odds.For(With(h17: false), true).HouseEdge, 2)} to {Pct(Odds.For(With(h17: true), true).HouseEdge, 2)}): "
-            + "from soft 17 the next card makes 18-21 40% of the time here, 31% with a deck.");
+            + $"from soft 17 the next card makes 18-21 {Pct(1 - dice.BustOnHit(17), 0)} of the time here, {Pct(1 - deck.BustOnHit(17), 0)} with a deck.");
         Section("You act first", "If you bust you lose, even if the dealer busts afterwards. Why: this is where the house's edge comes from in blackjack.");
         Section("Double", "First two cards only: the stake doubles, you take exactly one card, then stand. "
             + "Why: it is meant for a strong start such as 10 or 11. With 1-10 rolls it never has the best expected value, under any setting: "
-            + "an 11 becomes 21 only 10% of the time (31% with a deck), so one card at double stake is worse than hitting freely.");
+            + $"an 11 becomes 21 only {Pct(Odds.Dice[10], 0)} of the time ({Pct(Odds.Deck[10], 0)} with a deck), so one card at double stake is worse than hitting freely.");
         Section("Split", "Only on a pair, once per round. Each card starts its own hand. "
             + "Why: a pair like 8+8 makes a poor 16, but two hands starting from 8 can still win. One split keeps the round short. The chart below shows which pairs to split.");
         Section("Double after split (setting)", "Lets each split hand double on its first two cards. "
@@ -277,7 +277,7 @@ public sealed class BlackjackWindow : Window
         Section("Channels", "Say rolls /random (say radius). Party and Alliance roll /dice there, so only that group sees it. "
             + "Tell rolls /random and tells each card to the named player. Why: the game cannot roll into a tell, so the roll stays public and the tell only relays it.");
         Section("Round result", "Tick any mix of Echo (only you), Say, Party, Alliance and Tell; each gets the same one-line result.");
-        Section("Safety", "Nothing rolls until you press a button. Every roll or post is at least the set spacing apart (2 s minimum), to stay clear of chat spam limits. "
+        Section("Safety", $"Nothing rolls until you press a button. Every roll or post is at least the set spacing apart ({Configuration.MinRollSpacing} s minimum), to stay clear of chat spam limits. "
             + "Only your own roll counts as a card, so nobody else can feed you cards. "
             + "If no result arrives in time, rolling pauses rather than re-rolling, so a lost roll is never counted twice. Logging out abandons the round.");
         Section("Limits", "English client only. Bets and gil are not handled; stakes are units. The maths assumes best play and the 1-10 rolls are fair.");

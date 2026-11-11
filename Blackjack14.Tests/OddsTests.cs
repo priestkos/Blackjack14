@@ -118,6 +118,26 @@ public class OddsTests(ITestOutputHelper output)
         Assert.InRange(sd, Odds.RoundSpread - 0.03, Odds.RoundSpread + 0.03); // Help quotes this spread
     }
 
+    // Help derives "soft 17 improves to 18-21" as 1 - BustOnHit(17) and "11 becomes 21" as the ten share: check both with real hands.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Help_derivations_match_the_hands_they_describe(bool deck)
+    {
+        var p = deck ? Odds.Deck : Odds.Dice;
+        double soft17Improves = 0, elevenMakes21 = 0;
+        for (var v = 1; v <= 10; v++)
+        {
+            var soft = new Hand(); soft.Cards.AddRange([1, 6, v]);
+            if (soft.Total is >= 18 and <= 21) soft17Improves += p[v];
+            var eleven = new Hand(); eleven.Cards.AddRange([5, 6, v]);
+            if (eleven.Total == 21) elevenMakes21 += p[v];
+        }
+
+        Assert.Equal(soft17Improves, 1 - Odds.For(Default, deck).BustOnHit(17), 12);
+        Assert.Equal(elevenMakes21, p[10], 12);
+    }
+
     [Fact]
     public void Chart_has_every_row_and_column()
     {
