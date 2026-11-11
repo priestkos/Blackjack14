@@ -232,6 +232,41 @@ public class BlackjackGameTests
     }
 
     [Fact]
+    public void Dealer_natural_beats_a_three_card_21()
+    {
+        var g = Dealt(5, 6, 1);
+        g.Hit();
+        g.AddCard(10); // 21: stands by itself
+        Assert.Equal(Phase.Dealer, g.Phase);
+        g.AddCard(10); // dealer A+10
+        Assert.Equal(Phase.Done, g.Phase);
+        Assert.Equal(-1, g.Net);
+        Assert.Equal("Hand 1: 21 vs 21 - dealer blackjack (-1 unit)", g.Results[0]);
+    }
+
+    [Fact]
+    public void Equal_totals_push()
+    {
+        var g = Dealt(10, 8, 10);
+        g.Stand();
+        g.AddCard(8);
+        Assert.Equal(0, g.Net);
+        Assert.Equal("Blackjack: you 18 push | dealer 18 | 0 unit(s)", g.Summary);
+    }
+
+    [Fact]
+    public void Split_summary_lists_every_hand()
+    {
+        var g = Dealt(9, 9, 7);
+        g.Split();
+        g.AddCard(10); g.Stand(); // hand 1: 19
+        g.AddCard(10); g.Stand(); // hand 2: 19
+        g.AddCard(10);            // dealer 17
+        Assert.Equal(Phase.Done, g.Phase);
+        Assert.Equal("Blackjack: you 19 win, 19 win | dealer 17 | +2 unit(s)", g.Summary);
+    }
+
+    [Fact]
     public void Summary_is_one_line_for_the_round()
     {
         var g = Dealt(10, 9, 5);
