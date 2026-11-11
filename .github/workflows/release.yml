@@ -162,9 +162,8 @@ jobs:
             $dllEntries = @($archive.Entries | Where-Object { $_.Name -like '*.dll' })
             if ($dllEntries.Count -eq 0) { throw 'No plugin .dll found inside latest.zip' }
 
-            [xml]$proj = Get-Content -LiteralPath 'Blackjack14.csproj'
-            $assemblyBase = ($proj.Project.PropertyGroup | ForEach-Object { $_.Name } | Where-Object { $_ } | Select-Object -First 1)
-            if (-not $assemblyBase) { $assemblyBase = 'Blackjack14' }
+            # Pinned: the old PropertyGroup lookup never yielded the name and fell back to the first DLL in the zip.
+            $assemblyBase = 'Blackjack14'
             $preferredDll = "$assemblyBase.dll"
             $dllEntry = $dllEntries | Where-Object { $_.Name -eq $preferredDll } | Select-Object -First 1
             if (-not $dllEntry) { $dllEntry = $dllEntries | Select-Object -First 1 }
