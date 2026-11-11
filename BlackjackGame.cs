@@ -205,10 +205,10 @@ public sealed partial class BlackjackGame
     // English client formats, each confirmed in both GamblePyon and ChatDeathRoll2:
     // /random 10 -> "Random! You roll a 7 (out of 10)." (RandomNumber channel, no sender)
     // /dice <mode> 10 -> "Random! (1-10) 7" (the chosen channel, sender = the roller)
-    [GeneratedRegex(@"^Random! You roll a (\d+) \(out of 10\)\.$")]
+    [GeneratedRegex(@"^Random! You roll a (10|[1-9]) \(out of 10\)\.$")]
     private static partial Regex OwnRandomRegex();
 
-    [GeneratedRegex(@"^Random! \(1-10\) (\d+)$")]
+    [GeneratedRegex(@"^Random! \(1-10\) (10|[1-9])$")]
     private static partial Regex DiceRegex();
 
     public static int? TryParseRoll(string text, bool dice)

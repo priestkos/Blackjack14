@@ -37,6 +37,9 @@ public class BlackjackGameTests
     [InlineData("Random! (1-10) 10", true, 10)]
     [InlineData("Random! (1-13) 7", true, null)]
     [InlineData("Random! You roll a 7 (out of 10).", true, null)]
+    [InlineData("Random! You roll a 99999999999 (out of 10).", false, null)] // too long for int: must not throw
+    [InlineData("Random! (1-10) 99999999999", true, null)]
+    [InlineData("Random! You roll a 100 (out of 10).", false, null)]
     public void Parses_only_d10_rolls_in_the_chosen_format(string text, bool dice, int? expected) =>
         Assert.Equal(expected, BlackjackGame.TryParseRoll(text, dice));
 
